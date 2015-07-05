@@ -32,10 +32,12 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include "stdio.h"
 #include "stm32l1xx.h"
 #include "uart.h"
 #include "packet_eeprom.h"
 #include "string.h"
+#include "timer.h"
 
 typedef enum {FAILED = 0, PASSED = !FAILED} TestStatus;
 
@@ -57,12 +59,26 @@ int main(void)
 	USART_TypeDef * USARTx = USART2;
 	parser_t eeprom_parser;
 
-	init_RCC_Configuration();
+	//init_RCC_Configuration();
 
-	init_GPIO_Configuration();
+	init_HSI();
+
+	timer_TIM2_Configuration();
+
+	init_USART2();
 
 	uart_Configuration(USARTx, UART_POLLING);
 	uart_OutString(USARTx,"Welcome to Nucleo L152RE\r\n");
+
+	//Read eeprom settings to determine features
+
+	//initialize corresponding GPIOs
+
+	//init_GPIO_Configuration();
+
+
+
+
 
 	Address = DATA_EEPROM_START_ADDR;
 	packet_parser_init(&eeprom_parser);

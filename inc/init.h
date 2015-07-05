@@ -8,7 +8,8 @@
 #ifndef INIT_H_
 #define INIT_H_
 
-void init_RCC_Configuration(void);
-void init_GPIO_Configuration(void);
+void init_USART2(void);
+//void init_RCC_Configuration(void);
+//void init_GPIO_Configuration(void);
 
 #endif /* INIT_H_ */
