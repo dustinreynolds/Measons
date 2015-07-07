@@ -32,12 +32,85 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
+#include "stdio.h"
+#include "string.h"
 #include "stdbool.h"
 #include "stm32l1xx.h"
 #include "packet_eeprom.h"
 #include "crc_16bit_algorithm_dnp.h"
 #include "uart.h"
+#include "packet_00.h"
+
+#define DATA_EEPROM_START_ADDR     0x08080000
+#define DATA_EEPROM_END_ADDR       0x080803FF
+#define DATA_EEPROM_PAGE_SIZE      0x8
+#define DATA_32                    0x12345678
+#define FAST_DATA_32               0x55667799
+
+void packet_eeprom_init_config(config_t * config){
+	memset(config, 0, sizeof(config_t));
+}
+
+void packet_eeprom_print_configuration(USART_TypeDef * USARTx, config_t config){
+	char buffer[100];
+
+	sprintf(buffer,"Config Version: %04x %05d\r\n", config.version, config.version);
+	uart_OutString(USARTx, buffer);
+	sprintf(buffer,"Role: %02x\r\n", config.role);
+	uart_OutString(USARTx, buffer);
+	sprintf(buffer,"Status LEDs: %01d %01d %01d %01d\r\n", config.status_leds.statusLed1Enabled,
+			config.status_leds.statusLed2Enabled,
+			config.status_leds.statusLed3Enabled,
+			config.status_leds.statusLed4Enabled);
+	uart_OutString(USARTx, buffer);
+
+	if (config.number_onewire_devices > 0) {
+		uint8_t i = 0;
+		for (i = 0; i < config.number_onewire_devices; i++) {
+			sprintf(buffer,"Onewire device %d on Bus %d, enabled %d, type %d,",
+					i, config.onewire[i].bus, config.onewire[i].enabled, config.onewire[i].type);
+			uart_OutString(USARTx, buffer);
+			sprintf(buffer," ROM ID: %02x %02x %02x %02x %02x %02x %02x %02x\r\n",
+					config.onewire[i].unique_id[0],
+					config.onewire[i].unique_id[1],
+					config.onewire[i].unique_id[2],
+					config.onewire[i].unique_id[3],
+					config.onewire[i].unique_id[4],
+					config.onewire[i].unique_id[5],
+					config.onewire[i].unique_id[6],
+					config.onewire[i].unique_id[7]);
+			uart_OutString(USARTx, buffer);
+		}
+	}
+}
+
+void packet_eeprom_set_configuration(parser_t pkt, config_t * config){
+	if (pkt.packet.id == 0x00){
+		packet_00_config(pkt,config);
+	}
+}
+
+void packet_eeprom_load_configuration(config_t * config){
+	parser_t eeprom_parser;
+	packet_eeprom_t result;
+	uint32_t Address;
+
+	//read all stored packets in eeprom
+	Address = DATA_EEPROM_START_ADDR;
+	packet_parser_init(&eeprom_parser);
+
+	//loop through eeprom here
+	while (1){
+		result = packet_eeprom_read_packet(&Address, &eeprom_parser);
+
+		if (result == PKT_NO_MORE_PACKETS){
+			break;
+		}
+
+		//Do something with each packet here
+		packet_eeprom_set_configuration(eeprom_parser, config);
+	}
+}
 
 void _packet_find_crc_with_stx(USART_TypeDef * USARTx){
 	/*//CA D0 05 04 00 00 00 A5 C0 0A 3A
@@ -85,12 +158,10 @@ void packet_eeprom_byte_stuff(uint8_t byte, uint8_t * buffer, uint16_t * index){
 	}
 }
 
-packet_eeprom_t packet_eeprom_read_packet(USART_TypeDef * USARTx, uint32_t *address, parser_t * details){
-	//uint32_t data;
+packet_eeprom_t packet_eeprom_read_packet(uint32_t *address, parser_t * details){
 	uint16_t i, j = 0;
 	bool keep_processing = true;
 	packet_eeprom_t packet_result;
-	//uint8_t dataBuffer[50];
 	union {
 		uint32_t u32;
 		uint8_t u8[4];
@@ -110,12 +181,8 @@ packet_eeprom_t packet_eeprom_read_packet(USART_TypeDef * USARTx, uint32_t *addr
 			packet_result = packet_eeprom_parser(data.u8[i], details);
 
 			if (packet_result == PKT_SUCCESS){
-				//uint8_t dataBuffer[100];
-				//uint16_t pos = 0;
-
 				*address = *address + 4;
-				//packet_eeprom_prepare_packet(details,dataBuffer, &pos);
-				//uart_OutBuffer(USARTx, dataBuffer, pos);
+
 				return PKT_SUCCESS;
 			}else if (packet_result == PKT_FAILURE){
 				return PKT_FAILURE;
@@ -129,6 +196,31 @@ packet_eeprom_t packet_eeprom_read_packet(USART_TypeDef * USARTx, uint32_t *addr
 			return PKT_FAILURE;
 		}
 	}
+	return PKT_FAILURE;
+}
+
+void packet_eeprom_write_empty(uint32_t *address){
+	uint32_t data = 0x00000000;
+	__IO FLASH_Status FLASHStatus = FLASH_COMPLETE;
+
+	//enable flash writes here
+	DATA_EEPROM_Unlock();
+
+	FLASH_ClearFlag(FLASH_FLAG_EOP|FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR
+				| FLASH_FLAG_SIZERR | FLASH_FLAG_OPTVERR | FLASH_FLAG_OPTVERRUSR);
+
+	do{
+		FLASHStatus = DATA_EEPROM_ProgramWord(*address, data);
+
+		if(FLASHStatus == FLASH_COMPLETE){
+			//*address = *address;
+			//delayms(1);
+		}else{
+			FLASH_ClearFlag(FLASH_FLAG_EOP|FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR
+					| FLASH_FLAG_SIZERR | FLASH_FLAG_OPTVERR);
+		}
+	}while (FLASHStatus != FLASH_COMPLETE);
+	DATA_EEPROM_Lock();
 }
 
 void packet_eeprom_write(uint8_t * buffer, uint16_t size, uint32_t *address){

@@ -38,15 +38,14 @@
 #include "packet_eeprom.h"
 #include "string.h"
 #include "timer.h"
+#include "init.h"
 
 typedef enum {FAILED = 0, PASSED = !FAILED} TestStatus;
 
 /* Private define ------------------------------------------------------------*/
 #define DATA_EEPROM_START_ADDR     0x08080000
-#define DATA_EEPROM_END_ADDR       0x080803FF
+#define DATA_EEPROM_END_ADDR       0x08083FFF
 #define DATA_EEPROM_PAGE_SIZE      0x8
-#define DATA_32                    0x12345678
-#define FAST_DATA_32               0x55667799
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -58,12 +57,23 @@ int main(void)
 {
 	USART_TypeDef * USARTx = USART2;
 	parser_t eeprom_parser;
+	config_t eeprom_config;
 
+	packet_eeprom_init_config(&eeprom_config);
 	//init_RCC_Configuration();
 
 	init_HSI();
 
 	timer_TIM2_Configuration();
+
+	//Initialize FLASH - always present
+
+	//initialize RFM69 - always present
+
+	//initialize 3.3vctl regulator - always present
+	init_3v3Reg();
+
+	init_3v3RegOn(false);
 
 	init_USART2();
 
@@ -71,14 +81,25 @@ int main(void)
 	uart_OutString(USARTx,"Welcome to Nucleo L152RE\r\n");
 
 	//Read eeprom settings to determine features
+	packet_eeprom_load_configuration(&eeprom_config);
+	packet_eeprom_print_configuration(USARTx, eeprom_config);
 
 	//initialize corresponding GPIOs
-
+	init_setup_configuration(eeprom_config);
 	//init_GPIO_Configuration();
+	GPIOB->BSRRL |= GPIO_Pin_4;
+	GPIOB->BSRRL |= GPIO_Pin_5;
+	GPIOB->BSRRL |= GPIO_Pin_6;
+	GPIOA->BSRRL |= GPIO_Pin_8;
+	delayms(1000);
+	GPIOB->BSRRH |= GPIO_Pin_4;
+	GPIOB->BSRRH |= GPIO_Pin_5;
+	GPIOB->BSRRH |= GPIO_Pin_6;
+	GPIOA->BSRRH |= GPIO_Pin_8;
 
-
-
-
+	//scan for new hardware not described in config (new sensors)
+	init_search_new_hardware(&eeprom_config);
+	packet_eeprom_print_configuration(USARTx, eeprom_config);
 
 	Address = DATA_EEPROM_START_ADDR;
 	packet_parser_init(&eeprom_parser);
@@ -122,7 +143,7 @@ int main(void)
 
 						//loop through eeprom here
 						while (1){
-							result = packet_eeprom_read_packet(USARTx, &Address, &eeprom_parser);
+							result = packet_eeprom_read_packet(&Address, &eeprom_parser);
 
 							if (result == PKT_NO_MORE_PACKETS){
 								break;
@@ -135,6 +156,42 @@ int main(void)
 					if (eeprom_parser.packet.sub_id == 0x03){
 						//line feed on output
 						uart_OutString(USARTx, "\r\n");
+					}
+					if (eeprom_parser.packet.sub_id == 0x04){
+						//clear last position
+						packet_eeprom_write_empty(&Address);
+					}
+					if (eeprom_parser.packet.sub_id == 0x05){
+						uint8_t len, i;
+						//packet embedded within this packet
+						eeprom_parser.packet.id = eeprom_parser.packet.payload[0];
+						eeprom_parser.packet.sub_id = eeprom_parser.packet.payload[1];
+						//shift packet down by 2 bytes
+						for (i = 2; i < eeprom_parser.packet.length; i++ ){
+							eeprom_parser.packet.payload[i-2] = eeprom_parser.packet.payload[i];
+						}
+						eeprom_parser.packet.length = eeprom_parser.packet.length - 2;
+
+						//prepare packet and write it
+						packet_eeprom_prepare_packet(&eeprom_parser,dataBuffer, &pos);
+						packet_eeprom_write(dataBuffer,pos, &Address);
+					}
+					if (eeprom_parser.packet.sub_id == 0x06){ //redo init
+						//Read eeprom settings to determine features
+						packet_eeprom_init_config(&eeprom_parser);
+						packet_parser_init(&eeprom_parser);
+						packet_eeprom_load_configuration(&eeprom_config);
+						packet_eeprom_print_configuration(USARTx, eeprom_config);
+
+						//initialize corresponding GPIOs
+						init_setup_configuration(eeprom_config);
+
+						//scan for new hardware not described in config (new sensors)
+						init_search_new_hardware(&eeprom_config);
+						packet_eeprom_print_configuration(USARTx, eeprom_config);
+
+						Address = DATA_EEPROM_START_ADDR;
+						packet_parser_init(&eeprom_parser);
 					}
 				}
 

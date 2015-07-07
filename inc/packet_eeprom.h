@@ -48,6 +48,28 @@
 
 #define MAX_PAYLOAD_SIZE    80
 
+typedef struct {
+	uint8_t statusLed1Enabled;
+	uint8_t statusLed2Enabled;
+	uint8_t statusLed3Enabled;
+	uint8_t statusLed4Enabled;
+} config_led_t;
+
+typedef struct {
+	uint8_t bus;
+	uint8_t enabled;
+	uint8_t type;
+	uint8_t unique_id[8];
+} config_onewire_t;
+
+typedef struct {
+	uint16_t version;
+	uint8_t role;
+	config_led_t status_leds;
+	uint8_t number_onewire_devices;
+	config_onewire_t onewire[10];
+} config_t;
+
 typedef enum {
 	PKT_HEADER = 0x00,
 	PKT_ID,
@@ -85,8 +107,12 @@ typedef enum {
 	PKT_EEP_ID_HW_MOISTURE = 0x03,
 } pkt_eep_id_t;
 
+void packet_eeprom_init_config(config_t * config);
+void packet_eeprom_print_configuration(USART_TypeDef * USARTx, config_t config);
+void packet_eeprom_load_configuration(config_t * config);
+void packet_eeprom_write_empty(uint32_t *address);
 void packet_eeprom_write(uint8_t * buffer, uint16_t size, uint32_t *address);
-uint8_t packet_eeprom_read_packet(USART_TypeDef * USARTx, uint32_t *address, parser_t * details);
+uint8_t packet_eeprom_read_packet(uint32_t *address, parser_t * details);
 void packet_eeprom_prepare_packet(parser_t * details, uint8_t * sendBuffer, uint16_t * pos);
 void packet_parser_init(parser_t * details);
 uint8_t packet_eeprom_parser(uint8_t byte, parser_t * details);

@@ -39,6 +39,8 @@ void timer_TIM2_Configuration(void){
 	TIM_TimeBaseInitTypeDef timerInitStructure;
 	NVIC_InitTypeDef nvicStructure;
 
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2,ENABLE);
+
 	//Period between interrupts is (Period-1)/(32000000/(Prescaler-1))
 	timerInitStructure.TIM_Prescaler = 31;
 	timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;

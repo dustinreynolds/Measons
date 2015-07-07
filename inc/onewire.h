@@ -5,8 +5,8 @@
  *      Author: Dustin
  */
 
-#ifndef ONEWIRE_H_
-#define ONEWIRE_H_
+#ifndef __ONEWIRE_H_
+#define __ONEWIRE_H_
 
 #define OW3_MAX_SENSORS 6
 
@@ -14,6 +14,32 @@
 #define OW_TRUE  1
 
 typedef enum {
+	onewire_high = 0x00,  //Master releases the bus
+	onewire_low = 0x01,   //Master pulls down bus
+} onewire_level_t;
+
+typedef enum {
+	onewire_reset = 0x00,
+	onewire_write_0,
+	onewire_write_1,
+	onewire_read,
+	onewire_single,
+	onewire_done,
+} onewire_state_t;
+
+typedef enum {
+	onewire_OW1 = 0x00, //PC6
+	onewire_OW2 = 0x01, //PB2
+	onewire_OW3 = 0x02, //PC7
+} onewire_port_t;
+
+typedef struct {
+	onewire_state_t state;
+	uint16_t next_delay;
+	onewire_level_t next_level;
+} onewire_OWn_t;
+
+enum {
 	onewire_read_rom = 0x33,
 	onewire_match_rom = 0x55,
 	onewire_skip_rom = 0xCC,
@@ -30,15 +56,15 @@ enum {
 	DS18B20_read_powersupply = 0xB4,
 };
 
-typedef enum {
-	onewire_high = 0x00,  //Master releases the bus
-	onewire_low = 0x01,   //Master pulls down bus
-} onewire_level_t;
+typedef struct{
+	GPIO_TypeDef * port;
+	uint16_t pin;
+	GPIO_InitTypeDef config;
+} OW_Device_t;
 
-typedef enum {
-	onewire_OW3 = 0x00, //PC6
-	onewire_OW4 = 0x01, //PC7
-} onewire_port_t;
+
+
+
 
 void onewire_Init(onewire_port_t OWx);
 

@@ -22,23 +22,10 @@
  *
  */
 #include "stm32l1xx.h"
+#include "string.h"
+
 #include "onewire.h"
-#include "init.h"
-
-typedef enum {
-	onewire_reset = 0x00,
-	onewire_write_0,
-	onewire_write_1,
-	onewire_read,
-	onewire_single,
-	onewire_done,
-} onewire_state_t;
-
-typedef struct {
-	onewire_state_t state;
-	uint16_t next_delay;
-	onewire_level_t next_level;
-} onewire_OWn_t;
+#include "timer.h"
 
 // method declarations for Maxim 1-wire
 
@@ -56,49 +43,44 @@ int LastFamilyDiscrepancy;
 int LastDeviceFlag;
 unsigned char crc8;
 
-GPIO_InitTypeDef gpioOW3;
-
+//GPIO_InitTypeDef gpioOW1;
+//GPIO_InitTypeDef gpioOW2;
+//GPIO_InitTypeDef gpioOW3;
 //onewire_OWn_t onewire_OW3;
+OW_Device_t OW_devices[3];
 
-GPIO_InitTypeDef gpioOW4;
-NVIC_InitTypeDef nvicOW4;
+//NVIC_InitTypeDef nvicOW4;
 
 
 void onewire_Init(onewire_port_t OWx){
-	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
+	if (OWx == onewire_OW1){
+		RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
+		OW_devices[OWx].port = GPIOC;
+		OW_devices[OWx].pin = GPIO_Pin_6;
 
-	if (OWx == onewire_OW3){
-
-		/*-------------------------- GPIO Configuration ----------------------------*/
-		gpioOW3.GPIO_Pin = GPIO_Pin_6;
-		gpioOW3.GPIO_Mode = GPIO_Mode_OUT;
-		gpioOW3.GPIO_OType = GPIO_OType_OD;  //open drain, 4.7k used as pull up
-		gpioOW3.GPIO_PuPd = GPIO_PuPd_NOPULL;
-		gpioOW3.GPIO_Speed = GPIO_Speed_40MHz;
-		GPIO_Init(GPIOC, &gpioOW3);
-
-	}else if (OWx == onewire_OW4){
-		/*-------------------------- GPIO Configuration ----------------------------*/
-		gpioOW3.GPIO_Pin = GPIO_Pin_7;
-		gpioOW3.GPIO_Mode = GPIO_Mode_OUT;
-		gpioOW3.GPIO_OType = GPIO_OType_OD;  //open drain, 4.7k used as pull up
-		gpioOW3.GPIO_PuPd = GPIO_PuPd_NOPULL;
-		gpioOW3.GPIO_Speed = GPIO_Speed_40MHz;
-		GPIO_Init(GPIOC, &gpioOW3);
+	}else if (OWx == onewire_OW2){
+		RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOB, ENABLE);
+		OW_devices[OWx].port = GPIOB;
+		OW_devices[OWx].pin = GPIO_Pin_2;
+	}else if (OWx == onewire_OW3){
+		RCC_AHBPeriphClockCmd(RCC_AHBPeriph_GPIOC, ENABLE);
+		OW_devices[OWx].port = GPIOC;
+		OW_devices[OWx].pin = GPIO_Pin_7;
 	}
 
+	OW_devices[OWx].config.GPIO_Pin = OW_devices[OWx].pin;
+	OW_devices[OWx].config.GPIO_Pin = GPIO_Pin_6;
+	OW_devices[OWx].config.GPIO_Mode = GPIO_Mode_OUT;
+	OW_devices[OWx].config.GPIO_OType = GPIO_OType_OD;
+	OW_devices[OWx].config.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	OW_devices[OWx].config.GPIO_Speed = GPIO_Speed_40MHz;
+	GPIO_Init(OW_devices[OWx].port, &(OW_devices[OWx].config));
 }
 void onewire_write(onewire_port_t OWx, onewire_level_t state){
-	if (OWx == onewire_OW3){
-		if (state == onewire_high)
-			GPIOC->BSRRH = GPIO_Pin_6;
-		else
-			GPIOC->BSRRL = GPIO_Pin_6;
-	}else if (OWx == onewire_OW4){
-		if (state == onewire_high)
-			GPIOC->BSRRH = GPIO_Pin_7;
-		else
-			GPIOC->BSRRL = GPIO_Pin_7;
+	if (state == onewire_high){
+		OW_devices[OWx].port->BSRRH = OW_devices[OWx].pin;
+	}else{
+		OW_devices[OWx].port->BSRRL = OW_devices[OWx].pin;
 	}
 }
 
@@ -114,26 +96,15 @@ uint8_t onewire_sendResetBasic(onewire_port_t OWx){
 	delayus(60);
 
 	//Do Read - 47 us to perform read and switch to output, 22.4us to just read
-	if (OWx == onewire_OW3){
-		gpioOW3.GPIO_Mode = GPIO_Mode_IN;
-		GPIO_Init(GPIOC, &gpioOW3);
-		//do read
-		presence = GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_6);
+	OW_devices[OWx].config.GPIO_Mode = GPIO_Mode_IN;
+	GPIO_Init(OW_devices[OWx].port, &(OW_devices[OWx].config));
+	//do read
+	presence = GPIO_ReadInputDataBit(OW_devices[OWx].port, OW_devices[OWx].pin);
 
-		//reset to output
-		gpioOW3.GPIO_Mode = GPIO_Mode_OUT;
-		GPIO_Init(GPIOC, &gpioOW3);
-	}
-	else if (OWx == onewire_OW4){
-		gpioOW4.GPIO_Mode = GPIO_Mode_IN;
-		GPIO_Init(GPIOC, &gpioOW4);
-		//do read
-		presence = GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_7);
+	//reset to output
+	OW_devices[OWx].config.GPIO_Mode = GPIO_Mode_OUT;
+	GPIO_Init(OW_devices[OWx].port, &(OW_devices[OWx].config));
 
-		//reset to output
-		gpioOW4.GPIO_Mode = GPIO_Mode_OUT;
-		GPIO_Init(GPIOC, &gpioOW4);
-	}
 
 	//wait 120us more
 	delayus(180 - 61 + 240);  //extra 240 for total of 960 us
@@ -168,25 +139,16 @@ uint8_t __inline__ onewire_ReadBasic(onewire_port_t OWx){
 	delayus(1);//normally this would be bad, but since it just returns for <2, we are good.
 	onewire_write(OWx, onewire_low);
 
-	if (OWx == onewire_OW3){
-		gpioOW3.GPIO_Mode = GPIO_Mode_IN;
-		GPIO_Init(GPIOC, &gpioOW3);
+	OW_devices[OWx].config.GPIO_Mode = GPIO_Mode_IN;
+	GPIO_Init(OW_devices[OWx].port, &(OW_devices[OWx].config));
 
-		waitSpecificCount(12);
-		//do read
-		bitRead = GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_6);
-		gpioOW3.GPIO_Mode = GPIO_Mode_OUT;
-		GPIO_Init(GPIOC, &gpioOW3);
-	}else if (OWx == onewire_OW4){
-		gpioOW4.GPIO_Mode = GPIO_Mode_IN;
-		GPIO_Init(GPIOC, &gpioOW4);
+	waitSpecificCount(12);
+	//do read
+	bitRead = GPIO_ReadInputDataBit(OW_devices[OWx].port, OW_devices[OWx].pin);
 
-		waitSpecificCount(12);
-		//do read
-		bitRead = GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_7);
-		gpioOW4.GPIO_Mode = GPIO_Mode_OUT;
-		GPIO_Init(GPIOC, &gpioOW4);
-	}
+	//reset to output
+	OW_devices[OWx].config.GPIO_Mode = GPIO_Mode_OUT;
+	GPIO_Init(OW_devices[OWx].port, &(OW_devices[OWx].config));
 
 	waitStartedDelay();
 	return bitRead;
@@ -647,67 +609,4 @@ unsigned char docrc8(unsigned char value)
  * The preceding code is from Maxim 1-Wire Search Algorithm, Application Note 187
  * http://www.maximintegrated.com/en/app-notes/index.mvp/id/187
  */
-
-
-////implementing a one wire algorithm for searching the binary tree
-//uint8_t onewire_OW3_search(uint8_t * ROM, uint8_t clean_sweep){
-//	uint8_t presence = 1;
-//	uint8_t rom_bit, cmp_rom_bit, bit_ctr;
-//	uint8_t rom_id[8];
-//	static uint8_t existing_diff[OW3_MAX_SENSORS];
-//	static uint8_t discrepancies_index = 0;
-//	static uint8_t latest_discrepancy;
-//
-//	memset(rom_id, 0, sizeof(rom_id));
-//
-//	if(clean_sweep){
-//		memset(existing_diff, 0, sizeof(existing_diff));
-//	}
-//
-//	presence = onewire_OW3_sendResetBasic();
-//
-//	onewire_OW3_sendByte(0xF0); //search rom
-//
-//	//loop through each bit
-//	for( bit_ctr = 0; bit_ctr < 64; bit_ctr++){
-//		rom_bit = onewire_OW3_ReadBasic();
-//		cmp_rom_bit = onewire_OW3_ReadBasic();
-//
-//		if(rom_bit == 1 && cmp_rom_bit == 1){
-//			//no devices participating, exit
-//			return 0;
-//		}else if (rom_bit == 0 && cmp_rom_bit == 1){ //only 0's present
-//			onewire_OW3_sendBit(rom_bit);
-//		}else if (rom_bit == 1 && cmp_rom_bit == 0){ //only 1's present
-//			//rom_id[7 - (bit_ctr / 8)] |= 1 << (7 - (bit_ctr % 8));
-//			rom_id[(bit_ctr / 8)] |= (1 << bit_ctr % 8);
-//			onewire_OW3_sendBit(rom_bit);
-//		}else{ //Both 0's and 1's present, choose one path
-//			//look at table of already discovered units to determine which branch we should take
-//			//Will need to store array of positions which have discrepancies to know which paths to explore more.
-//			//we have found this discrepancy before, check if this branch we should go down
-//			if (latest_discrepancy == bit_ctr){
-//				//we should go down this path
-//				//send 0
-//				onewire_OW3_sendBit(0);
-//
-//				discrepancies_index--;
-//				latest_discrepancy = existing_diff[discrepancies_index]; //
-//			}
-//			else{
-//				//first time down this path
-//				latest_discrepancy = bit_ctr;
-//				existing_diff[discrepancies_index++] = bit_ctr;
-//			}
-//
-//
-//
-//		}
-//	}
-//	if(discrepancies_index > 0){
-//
-//	}
-//
-//	memcpy(ROM,rom_id,sizeof(rom_id));
-//}
 
