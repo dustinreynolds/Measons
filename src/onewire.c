@@ -69,7 +69,6 @@ void onewire_Init(onewire_port_t OWx){
 	}
 
 	OW_devices[OWx].config.GPIO_Pin = OW_devices[OWx].pin;
-	OW_devices[OWx].config.GPIO_Pin = GPIO_Pin_6;
 	OW_devices[OWx].config.GPIO_Mode = GPIO_Mode_OUT;
 	OW_devices[OWx].config.GPIO_OType = GPIO_OType_OD;
 	OW_devices[OWx].config.GPIO_PuPd = GPIO_PuPd_NOPULL;

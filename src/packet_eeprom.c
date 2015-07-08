@@ -90,6 +90,10 @@ void packet_eeprom_set_configuration(parser_t pkt, config_t * config){
 	}
 }
 
+void packet_eeprom_save_configuration(uint32_t * Address, config_t config){
+	packet_00_save_config_to_eeprom(Address, config);
+}
+
 void packet_eeprom_load_configuration(config_t * config){
 	parser_t eeprom_parser;
 	packet_eeprom_t result;
@@ -199,7 +203,7 @@ packet_eeprom_t packet_eeprom_read_packet(uint32_t *address, parser_t * details)
 	return PKT_FAILURE;
 }
 
-void packet_eeprom_write_empty(uint32_t *address){
+void packet_eeprom_write_empty(const uint32_t *address){
 	uint32_t data = 0x00000000;
 	__IO FLASH_Status FLASHStatus = FLASH_COMPLETE;
 

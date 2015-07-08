@@ -95,7 +95,7 @@ void init_search_new_hardware(config_t * config) {
 						rom[0], rom[1], rom[2],
 						rom[3], rom[4], rom[5],
 						rom[6], rom[7]);
-				uart_OutString(USART2, buffer);
+				//uart_OutString(USART2, buffer);
 
 				//Compare this rom id vs id's stored
 				for (k = 0; k < config->number_onewire_devices; k++){

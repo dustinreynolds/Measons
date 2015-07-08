@@ -39,6 +39,7 @@
 #include "string.h"
 #include "timer.h"
 #include "init.h"
+#include "packet_00.h"
 
 typedef enum {FAILED = 0, PASSED = !FAILED} TestStatus;
 
@@ -101,7 +102,10 @@ int main(void)
 	init_search_new_hardware(&eeprom_config);
 	packet_eeprom_print_configuration(USARTx, eeprom_config);
 
+
 	Address = DATA_EEPROM_START_ADDR;
+	packet_eeprom_save_configuration(&Address, eeprom_config); //rewrite eeprom with newly discovered sensors.
+
 	packet_parser_init(&eeprom_parser);
 
 	while(1){
@@ -178,10 +182,10 @@ int main(void)
 					}
 					if (eeprom_parser.packet.sub_id == 0x06){ //redo init
 						//Read eeprom settings to determine features
-						packet_eeprom_init_config(&eeprom_parser);
+						packet_eeprom_init_config(&eeprom_config);
 						packet_parser_init(&eeprom_parser);
 						packet_eeprom_load_configuration(&eeprom_config);
-						packet_eeprom_print_configuration(USARTx, eeprom_config);
+						//packet_eeprom_print_configuration(USARTx, eeprom_config);
 
 						//initialize corresponding GPIOs
 						init_setup_configuration(eeprom_config);
@@ -191,6 +195,8 @@ int main(void)
 						packet_eeprom_print_configuration(USARTx, eeprom_config);
 
 						Address = DATA_EEPROM_START_ADDR;
+						packet_eeprom_save_configuration(&Address, eeprom_config); //rewrite eeprom with newly discovered sensors.
+
 						packet_parser_init(&eeprom_parser);
 					}
 				}

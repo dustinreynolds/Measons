@@ -52,6 +52,13 @@ typedef enum {
 	PKT_00_PIR_MOTION = 0x22
 }eeprom_id_00_t;
 
-void packet_00_config(parser_t pkt, config_t * config);
+typedef enum {
+	ERROR_00_NO_ERROR = 0x00,
+	ERROR_00_INVALID_DEVICE_NUM = 0x01,
+	ERROR_00_INVALID_SUB_ID,
+}eeprom_00_error_t;
 
+void packet_00_config(parser_t pkt, config_t * config);
+eeprom_00_error_t packet_00_make_packet(eeprom_id_00_t pktSubid, uint8_t deviceNum, parser_t * pkt, config_t config);
+eeprom_00_error_t packet_00_save_config_to_eeprom(uint32_t *Address, config_t config);
 #endif /* PACKET_00_H_ */

@@ -8,7 +8,7 @@
 #ifndef __ONEWIRE_H_
 #define __ONEWIRE_H_
 
-#define OW3_MAX_SENSORS 6
+#define OW_MAX_SENSORS 20
 
 #define OW_FALSE 0
 #define OW_TRUE  1

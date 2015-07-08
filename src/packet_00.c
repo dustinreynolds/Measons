@@ -57,7 +57,7 @@ void packet_00_config(parser_t pkt, config_t * config){
 	}
 	if (pkt.packet.sub_id == PKT_00_ONEWIRE){
 		uint8_t i;
-		if (config->number_onewire_devices <=255){
+		if (config->number_onewire_devices < OW_MAX_SENSORS){
 			config->onewire[config->number_onewire_devices].bus = pkt.packet.payload[0];
 			config->onewire[config->number_onewire_devices].enabled = pkt.packet.payload[1];
 			config->onewire[config->number_onewire_devices].type = pkt.packet.payload[2];
@@ -67,4 +67,68 @@ void packet_00_config(parser_t pkt, config_t * config){
 			config->number_onewire_devices++;
 		}
 	}
+}
+
+eeprom_00_error_t packet_00_make_packet(eeprom_id_00_t pktSubid, uint8_t deviceNum, parser_t * pkt, config_t config){
+	uint8_t i = 0;
+	pkt->packet.id = 0x00;
+	pkt->packet.sub_id = pktSubid;
+	if (pktSubid == PKT_00_VERSION){
+		pkt->packet.payload[i++] = config.version & 0xFF;
+		pkt->packet.payload[i++] = config.version >> 8;
+	}else if (pktSubid == PKT_00_ROLE){
+		pkt->packet.payload[i++] = config.role;
+	}else if (pktSubid == PKT_00_STATUS_LEDS){
+		pkt->packet.payload[i++] = config.status_leds.statusLed1Enabled;
+		pkt->packet.payload[i++] = config.status_leds.statusLed2Enabled;
+		pkt->packet.payload[i++] = config.status_leds.statusLed3Enabled;
+		pkt->packet.payload[i++] = config.status_leds.statusLed4Enabled;
+	}else if (pktSubid == PKT_00_ONEWIRE){
+		uint8_t j = 0;
+		if (deviceNum > config.number_onewire_devices){
+			return ERROR_00_INVALID_DEVICE_NUM;
+		}
+		pkt->packet.payload[i++] = config.onewire[deviceNum].bus;
+		pkt->packet.payload[i++] = config.onewire[deviceNum].enabled;
+		pkt->packet.payload[i++] = config.onewire[deviceNum].type;
+		for (j = 0; j < 8; j++){
+			pkt->packet.payload[i++] = config.onewire[deviceNum].unique_id[j];
+		}
+	}else{
+		return ERROR_00_INVALID_SUB_ID;
+	}
+	pkt->packet.length = i;
+	return ERROR_00_NO_ERROR;
+}
+
+//this function will save this config structure to EEPROM
+eeprom_00_error_t packet_00_save_config_to_eeprom(uint32_t *Address, config_t config){
+	uint8_t j = 0;
+	eeprom_00_error_t error;
+	parser_t packet;
+	uint8_t buffer[100];
+	uint16_t pos;
+	for(j = 0; j < 255; j++){
+		if (j != PKT_00_ONEWIRE){
+			error = packet_00_make_packet(j,0,&packet,config);
+			if (error != ERROR_00_NO_ERROR){
+				continue;
+			}
+			packet_eeprom_prepare_packet(&packet,buffer,&pos);
+			packet_eeprom_write(buffer,pos, Address);
+		}
+	}
+	//handle configuration which is spread over multiple packets
+	for (j = 0; j < config.number_onewire_devices; j++){
+		error = packet_00_make_packet(PKT_00_ONEWIRE,j,&packet,config);
+		if (error != ERROR_00_NO_ERROR){
+			return error;
+		}
+		packet_eeprom_prepare_packet(&packet,buffer,&pos);
+		packet_eeprom_write(buffer,pos, Address);
+	}
+
+	//finish it by writing an empty packet
+	packet_eeprom_write_empty(Address);
+	return ERROR_00_NO_ERROR;
 }
