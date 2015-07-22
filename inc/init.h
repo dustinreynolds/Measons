@@ -12,6 +12,9 @@
 #include "packet_eeprom.h"
 
 void init_setup_configuration(config_t config);
+void init_search_new_hardware(config_t * config);
+void init_flash(void);
+void init_rfm69hw(void);
 void init_USART2(void);
 void init_HSI(void);
 void init_3v3Reg(void);

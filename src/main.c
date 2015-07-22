@@ -39,7 +39,10 @@
 #include "string.h"
 #include "timer.h"
 #include "init.h"
+#include "spi.h"
 #include "packet_00.h"
+#include "sx1231h.h"
+#include "flash.h"
 
 typedef enum {FAILED = 0, PASSED = !FAILED} TestStatus;
 
@@ -67,9 +70,16 @@ int main(void)
 
 	timer_TIM2_Configuration();
 
-	//Initialize FLASH - always present
+	//Initialize FLASH GPIOs - always present
+	init_flash();
 
-	//initialize RFM69 - always present
+	//initialize RFM69 GPIOs - always present
+	init_rfm69hw();
+
+	//Initialize SPI DMA and peripheral
+	spi_SPI2_Configuration();
+
+	sx1231h_init(SPI_RFM69_1);
 
 	//initialize 3.3vctl regulator - always present
 	init_3v3Reg();
@@ -81,6 +91,9 @@ int main(void)
 	uart_Configuration(USARTx, UART_POLLING);
 	uart_OutString(USARTx,"Welcome to Nucleo L152RE\r\n");
 
+	if (!flash_present()){
+		uart_OutString(USARTx,"Flash is not responding...\r\n");
+	}
 	//Read eeprom settings to determine features
 	packet_eeprom_load_configuration(&eeprom_config);
 	packet_eeprom_print_configuration(USARTx, eeprom_config);
@@ -122,7 +135,7 @@ int main(void)
 
 			//USART_SendData(USARTx, Data); // Echo Char
 			//Address = DATA_EEPROM_START_ADDR;
-			packet_result = packet_eeprom_parser(Data, &eeprom_parser);
+			packet_result = packet_eeprom_parser((uint8_t) Data, &eeprom_parser);
 
 			if (packet_result == PKT_SUCCESS){
 				uint8_t dataBuffer[100];
@@ -166,7 +179,7 @@ int main(void)
 						packet_eeprom_write_empty(&Address);
 					}
 					if (eeprom_parser.packet.sub_id == 0x05){
-						uint8_t len, i;
+						uint8_t i;
 						//packet embedded within this packet
 						eeprom_parser.packet.id = eeprom_parser.packet.payload[0];
 						eeprom_parser.packet.sub_id = eeprom_parser.packet.payload[1];
@@ -206,7 +219,7 @@ int main(void)
 				char buffer[40];
 				sprintf(buffer,"CRC Fail, Calc %04x, Recv %04x\r\n",
 						eeprom_parser.crc,
-						(eeprom_parser.packet.crc[1] << 8) |eeprom_parser.packet.crc[0]);
+						(eeprom_parser.packet.crc[0] << 8) |eeprom_parser.packet.crc[1]);
 				uart_OutString(USARTx, buffer);
 			}
 		}

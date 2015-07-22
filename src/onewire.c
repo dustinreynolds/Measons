@@ -112,7 +112,7 @@ uint8_t onewire_sendResetBasic(onewire_port_t OWx){
 	return !presence;  //return 1 if device is detected
 }
 
-void __inline__ onewire_WriteOneBasic(onewire_port_t OWx){
+__inline__ void onewire_WriteOneBasic(onewire_port_t OWx){
 	startDelayus(52+10); //56, but with function overhead and the delay of setting up startDelayus, it can effect timing.
 	onewire_write(OWx, onewire_high);
 
@@ -122,7 +122,7 @@ void __inline__ onewire_WriteOneBasic(onewire_port_t OWx){
 	waitStartedDelay();
 }
 
-void __inline__ onewire_WriteZeroBasic(onewire_port_t OWx){
+__inline__ void onewire_WriteZeroBasic(onewire_port_t OWx){
 	startDelayus(52); //56
 	onewire_write(OWx, onewire_high);
 	waitStartedDelay();
@@ -131,7 +131,7 @@ void __inline__ onewire_WriteZeroBasic(onewire_port_t OWx){
 
 }
 
-uint8_t __inline__ onewire_ReadBasic(onewire_port_t OWx){
+__inline__ uint8_t onewire_ReadBasic(onewire_port_t OWx){
 	uint8_t bitRead;
 	startDelayus(52+10); //56
 	onewire_write(OWx, onewire_high);
@@ -153,7 +153,7 @@ uint8_t __inline__ onewire_ReadBasic(onewire_port_t OWx){
 	return bitRead;
 }
 
-void __inline__ onewire_sendBit(onewire_port_t OWx, uint8_t bit){
+__inline__ void  onewire_sendBit(onewire_port_t OWx, uint8_t bit){
 	if (bit)
 		onewire_WriteOneBasic(OWx);
 	else
@@ -171,7 +171,7 @@ void onewire_sendByte(onewire_port_t OWx, uint8_t byte){
 uint8_t onewire_readByte(onewire_port_t OWx){
 	uint8_t i = 0, byte = 0;
 	while(i < 8){
-		byte |= (onewire_ReadBasic(OWx) << (i++));
+		byte |= (uint8_t)((onewire_ReadBasic(OWx) << (i++)));
 	}
 	return byte;
 }
@@ -181,7 +181,7 @@ void onewire_read_latest_ROM(uint8_t * rom){
 }
 
 void onewire_read_temp(onewire_port_t OWx, uint8_t rom[8]){
-	uint8_t presence, i, crc, is_done = 0;
+	uint8_t presence, i, crc;
 	uint8_t buffer[9], pbuf[40];
 	uint16_t temp;
 	presence = onewire_sendResetBasic(OWx);
@@ -196,10 +196,7 @@ void onewire_read_temp(onewire_port_t OWx, uint8_t rom[8]){
 
 	onewire_sendByte(OWx, DS18B20_convert);
 	//poll device to see when it is done
-//	while(!is_done){
-//		is_done = onewire_OW3_ReadBasic();
-//		delayms(1);
-//	}
+
 	delayms(750);
 	presence = onewire_sendResetBasic(OWx);
 
@@ -253,6 +250,8 @@ void onewire_read_stored_temp(onewire_port_t OWx, uint8_t rom[8]){
 	}
 
 	presence = onewire_sendResetBasic(OWx);
+	if (!presence)
+		return;
 
 	onewire_sendByte(OWx, onewire_match_rom);
 
@@ -318,9 +317,9 @@ int OWNext(onewire_port_t OWx)
 //
 int OWSearch(onewire_port_t OWx)
 {
-	int id_bit_number;
-	int last_zero, rom_byte_number, search_result;
-	int id_bit, cmp_id_bit;
+	unsigned char id_bit_number;
+	unsigned char last_zero, rom_byte_number, search_result;
+	unsigned char id_bit, cmp_id_bit;
 	unsigned char rom_byte_mask, search_direction;
 
 	// initialize for search
@@ -388,7 +387,7 @@ int OWSearch(onewire_port_t OWx)
 				if (search_direction == 1)
 					ROM_NO[rom_byte_number] |= rom_byte_mask;
 				else
-					ROM_NO[rom_byte_number] &= ~rom_byte_mask;
+					ROM_NO[rom_byte_number] &= (unsigned char)(~rom_byte_mask);
 
 				// serial number search direction write bit
 				OWWriteBit(OWx, search_direction);
@@ -396,7 +395,7 @@ int OWSearch(onewire_port_t OWx)
 				// increment the byte counter id_bit_number
 				// and shift the mask rom_byte_mask
 				id_bit_number++;
-				rom_byte_mask <<= 1;
+				rom_byte_mask = (unsigned char)(rom_byte_mask << 1);
 
 				// if the mask is 0 then go to new SerialNum byte rom_byte_number and reset mask
 				if (rom_byte_mask == 0)

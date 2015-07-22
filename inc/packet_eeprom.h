@@ -49,6 +49,16 @@
 
 #define MAX_PAYLOAD_SIZE    80
 
+//MCC specific settings
+#define MAX_NUM_POBOX	20
+
+typedef enum {
+	ROLE_UNCONFIGURED = 0x00,
+	ROLE_GENERIC	  = 0x01,
+	ROLE_MCC		  = 0x02,
+	ROLE_GPS		  = 0x03,
+} roole_type_t;
+
 typedef struct {
 	uint8_t statusLed1Enabled;
 	uint8_t statusLed2Enabled;
@@ -64,8 +74,16 @@ typedef struct {
 } config_onewire_t;
 
 typedef struct {
-	uint16_t version;
 	uint8_t role;
+	/* MCC specific Role definitions*/
+	uint8_t mcc_num_mail_box;
+	uint8_t mcc_mail_box_size;
+	uint8_t* mcc_mail[MAX_NUM_POBOX]; //Maximum number of pointers to mailboxes
+} role_t;
+
+typedef struct {
+	uint16_t version;
+	role_t role;
 	config_led_t status_leds;
 	uint8_t number_onewire_devices;
 	config_onewire_t onewire[OW_MAX_SENSORS];

@@ -38,6 +38,36 @@
 #include "packet_eeprom.h"
 #include "packet_00.h"
 
+void packet_00_print_config(USART_TypeDef * USARTx, config_t config){
+	printSerial(USARTx, "Config Version: %04x %05d\r\n", config.version, config.version);
+
+	printSerial(USARTx, "Role: %02x\r\n", config.role.role);
+	if (config.role.role == ROLE_MCC){
+		printSerial(USARTx, "Number of boxes: %d, size of each box: %d\r\n",config.role.mcc_num_mail_box, config.role.mcc_mail_box_size);
+	}
+	printSerial(USARTx, "Status LEDs: %01d %01d %01d %01d\r\n", config.status_leds.statusLed1Enabled,
+			config.status_leds.statusLed2Enabled,
+			config.status_leds.statusLed3Enabled,
+			config.status_leds.statusLed4Enabled);
+
+	if (config.number_onewire_devices > 0) {
+		uint8_t i = 0;
+		for (i = 0; i < config.number_onewire_devices; i++) {
+			printSerial(USARTx, "Onewire device %d on Bus %d, enabled %d, type %d,",
+					i, config.onewire[i].bus, config.onewire[i].enabled, config.onewire[i].type);
+			printSerial(USARTx, " ROM ID: %02x %02x %02x %02x %02x %02x %02x %02x\r\n",
+					config.onewire[i].unique_id[0],
+					config.onewire[i].unique_id[1],
+					config.onewire[i].unique_id[2],
+					config.onewire[i].unique_id[3],
+					config.onewire[i].unique_id[4],
+					config.onewire[i].unique_id[5],
+					config.onewire[i].unique_id[6],
+					config.onewire[i].unique_id[7]);
+		}
+	}
+}
+
 void packet_00_config(parser_t pkt, config_t * config){
 	//set something...
 	if (pkt.packet.sub_id == PKT_00_VERSION){
@@ -45,9 +75,23 @@ void packet_00_config(parser_t pkt, config_t * config){
 		config->version = (pkt.packet.payload[1] << 8) | pkt.packet.payload[0];
 	}
 	if (pkt.packet.sub_id == PKT_00_ROLE){
-		config->role = pkt.packet.payload[0];
+		config->role.role = pkt.packet.payload[0];
 
 		//do role specific byte parsing here...
+		if (config->role.role == ROLE_MCC){
+			uint8_t i;
+			config->role.mcc_num_mail_box = pkt.packet.payload[1];
+			config->role.mcc_mail_box_size = pkt.packet.payload[2];
+			//now allocate correct number of mail boxes
+			for (i = 0; i < config->role.mcc_num_mail_box; i++){
+				if (config->role.mcc_mail[i] != 0){
+					//no need to allocate memory
+				}else {
+					//malloc memory according to size
+					config->role.mcc_mail[i] = malloc(config->role.mcc_mail_box_size);
+				}
+			}
+		}
 	}
 	if (pkt.packet.sub_id == PKT_00_STATUS_LEDS){
 		config->status_leds.statusLed1Enabled = (pkt.packet.payload[0] > 0);
@@ -77,7 +121,9 @@ eeprom_00_error_t packet_00_make_packet(eeprom_id_00_t pktSubid, uint8_t deviceN
 		pkt->packet.payload[i++] = config.version & 0xFF;
 		pkt->packet.payload[i++] = config.version >> 8;
 	}else if (pktSubid == PKT_00_ROLE){
-		pkt->packet.payload[i++] = config.role;
+		pkt->packet.payload[i++] = config.role.role;
+		pkt->packet.payload[i++] = config.role.mcc_num_mail_box;
+		pkt->packet.payload[i++] = config.role.mcc_mail_box_size;
 	}else if (pktSubid == PKT_00_STATUS_LEDS){
 		pkt->packet.payload[i++] = config.status_leds.statusLed1Enabled;
 		pkt->packet.payload[i++] = config.status_leds.statusLed2Enabled;

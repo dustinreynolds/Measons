@@ -58,6 +58,7 @@ typedef enum {
 	ERROR_00_INVALID_SUB_ID,
 }eeprom_00_error_t;
 
+void packet_00_print_config(USART_TypeDef * USARTx, config_t config);
 void packet_00_config(parser_t pkt, config_t * config);
 eeprom_00_error_t packet_00_make_packet(eeprom_id_00_t pktSubid, uint8_t deviceNum, parser_t * pkt, config_t config);
 eeprom_00_error_t packet_00_save_config_to_eeprom(uint32_t *Address, config_t config);

@@ -1,0 +1,20 @@
+
+<SequenceFile>
+  <ItemList width0="72" width1="100" width2="117">
+    <SequenceItem name="sequence 1">
+      <sequence format="hex" value="00 01 02 03 04 05 06 07 08" script="/home/dustin/Important/Robotics/ScriptCommunicator_03_03_linux_64_bit/exampleScripts/SequenceScripts/sequenceSendScript.js" height="57"/>
+    </SequenceItem>
+    <SequenceItem name="sequence 2">
+      <sequence format="ascii" value="line 1&#10;line 2" script="" height="47"/>
+    </SequenceItem>
+    <SequenceItem name="sequence 3">
+      <sequence format="hex" value="64 64 64 64 64 88 88" script="" height="30"/>
+    </SequenceItem>
+    <SequenceItem name="00,00, len 4 - config reset address to beginning">
+      <sequence format="hex" value="CA 00 00 04 00 11 22 33 0D CF" script="" height="30"/>
+    </SequenceItem>
+    <SequenceItem name="00,02 len 4 - Config print out all eeprom packets">
+      <sequence format="hex" value="CA 00 02 04 44 55 66 77 05 E8" script="" height="30"/>
+    </SequenceItem>
+  </ItemList>
+</SequenceFile>

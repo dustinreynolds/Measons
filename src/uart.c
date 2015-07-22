@@ -5,7 +5,19 @@
  *      Author: Dustin
  */
 #include "stm32l1xx.h"
+#include "stdio.h"
+#include "stdarg.h"
 #include "uart.h"
+
+void printSerial(USART_TypeDef * USARTx, const char * format, ...){
+	char buffer[300];
+
+	va_list args;
+	va_start(args, format);
+	vsprintf(buffer, format, args);
+	va_end(args);
+	uart_OutString(USARTx, buffer);
+}
 
 void USART2_IRQHandler(void)
 {
