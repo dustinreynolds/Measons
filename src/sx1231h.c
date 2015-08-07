@@ -291,6 +291,12 @@ uint8_t sx1231h_sendFrameWait(uint8_t spi_device_num){
 	sx1231h_setRFMode(spi_device_num, RF_SLEEP);
 	return OK;
 }
+sx1231h_check_t sx1231h_sendFrameWaitCheck(uint8_t spi_device_num){
+	if((spi_read_register_cs(spi_device_num, REG_IRQFLAGS2) & RF_IRQFLAGS2_PACKETSENT) != 0x00){
+		return SX1231H_CHECK_READY;
+	}
+	return SX1231H_CHECK_NOT_READY;
+}
 
 uint8_t sx1231h_receiveFrameStart(uint8_t spi_device_num){
 	//avoid starting RX when packet ready to download
@@ -332,6 +338,17 @@ uint8_t sx1231h_receiveFrameWait(uint8_t spi_device_num, uint8_t *buffer, uint8_
 		*buffer++ = spi_read_register_cs(spi_device_num, REG_FIFO);
 	}
 	return OK;
+}
+
+sx1231h_check_t sx1231h_receiveWaitCheck(uint8_t spi_device_num){
+	if((spi_read_register_cs(spi_device_num, REG_IRQFLAGS2) & RF_IRQFLAGS2_PAYLOADREADY) != 0x00){
+		return SX1231H_CHECK_READY;
+	}
+	if((spi_read_register_cs(spi_device_num, REG_IRQFLAGS1) & RF_IRQFLAGS1_TIMEOUT) != 0x00){
+		sx1231h_setRFMode(spi_device_num, RF_SLEEP);
+		return SX1231H_CHECK_TIMEOUT;
+	}
+	return SX1231H_CHECK_NOT_READY;
 }
 
 //can listen/rx from 64us to a maximum of 66.81 seconds

@@ -1,8 +1,8 @@
 /*
- * sx1231h_test.h
+ * packet_sx1231h.h
  *
- *  Created on: Jun 27, 2015
- *      Author: Dustin
+ *  Created on: Aug 3, 2015
+ *      Author: dustin
  *
  * Copyright (c) 2015, Dustin Reynolds
  * All rights reserved.
@@ -33,42 +33,48 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SX1231H_TEST_H_
-#define SX1231H_TEST_H_
+#ifndef PACKET_SX1231H_H_
+#define PACKET_SX1231H_H_
 
-#define PRINT_CRLF 	1
-#define OMIT_CRLF	0
+#include <stdint.h>
+#include "stdbool.h"
+#include "onewire.h"
 
-typedef enum {
-	TEST_STRINGS_TEST_PRESENCE = 0,
-	TEST_STRINGS_BASIC_RX_TX,
-	TEST_STRINGS_DIFF_SYNC,
-	TEST_STRINGS_AES_ON,
-	TEST_STRINGS_AES_DIFF,
-	TEST_STRINGS_NODE_ADDRESS,
-	TEST_STRINGS_BROADCAST_ADDRESS,
-	TEST_STRINGS_NODE_WRONG_ADDRESS,
-	TEST_STRINGS_BROADCAST_NOT_ENABLED,
-	TEST_STRINGS_RSSI_THRESHOLD,
-	TEST_STRINGS_FREQ_HOP,
-	TEST_STRINGS_FREQ_HOP_FAILURE,
-	TEST_STRINGS_RX_TIMEOUT_HIGH,
-	TEST_STRINGS_RX_TIMEOUT_FAILURE,
-	TEST_STRINGS_VOID, //Be sure to add new tests to sx1231h_test and sx1231_test_identifier
-} test_strings_t;
+#define PACKET_SX1231H_STX			0xCB
+/*stx, id, subid, length, sender_id, crc[2] */
+#define PACKET_SX1231H_OVERHEAD		6
+#define MAX_SX1231H_PAYLOAD_SIZE    250
 
 typedef struct {
-	test_strings_t testIdentifier;
-	uint8_t (*function)(test_strings_t ,uint8_t, uint8_t);
-} pTable_t;
+	uint8_t stx;
+	uint8_t id;
+	uint8_t sub_id;
+	uint8_t length; //includes sender_id + payload
+	uint8_t sender_id; //who sent this packet!
+	uint8_t payload[MAX_SX1231H_PAYLOAD_SIZE];
+	union{
+		uint16_t crc16;
+		uint8_t crc8[2];
+	};
+} packet_sx1231h_t;
 
-uint8_t sx1231h_test_presence(test_strings_t identifier, uint8_t dev1, uint8_t dev2);
-uint8_t sx1231h_test_single_change(test_strings_t identifier, uint8_t dev1, uint8_t dev2);
-uint8_t sx1231h_test_failure(test_strings_t identifier, uint8_t dev1, uint8_t dev2);
-uint8_t sx1231h_test_rssi(test_strings_t identifier, uint8_t dev1, uint8_t dev2);
-uint8_t sx1231h_test_freq_hop(test_strings_t identifier, uint8_t dev1, uint8_t dev2);
-uint8_t sx1231h_find_lowest_settings(uint8_t dev1, uint8_t dev2);
-uint8_t sx1231h_wirelessTesting(uint8_t dev1, uint8_t dev2);
-uint8_t sx1231h_test_wirelessTesting(uint8_t dev1, uint8_t dev2);
+typedef enum {
+	PACKET_SX1231H_NO_ERROR = 0x00,
+	PACKET_SX1231H_STX_ERROR,
+	PACKET_SX1231H_SIZE_ERROR,
+	PACKET_SX1231H_CRC_BAD,
+} packet_sx1231h_error_t;
 
-#endif /* SX1231H_TEST_H_ */
+typedef enum {
+	PACKET_SX1231H_ID_MANAGEMENT 				= 0x00,
+	PACKET_SX1231H_ID_SENSOR					= 0x01,
+} packet_sx1231h_id_t;
+
+typedef enum {
+	//id PACKET_SX1231H_ID_SENSOR
+	PACKET_SX1231H_ID_00_SUB_ID_TEMPERATURE			= 0x01,
+};
+
+packet_sx1231h_error_t packet_sx1231h_parse(uint8_t * buffer, uint8_t size, packet_sx1231h_t * packet);
+void packet_sx1231h_fill_packet(uint8_t * buffer, uint8_t * index, packet_sx1231h_t * p);
+#endif /* PACKET_SX1231H_H_ */

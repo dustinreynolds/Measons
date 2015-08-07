@@ -25,11 +25,11 @@
 							<tool id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.1560321302" name="MCU GCC Compiler" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler">
 								<option id="gnu.c.compiler.option.debugging.level.2045532760" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1598728184" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/inc&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/CMSIS/core&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/CMSIS/device&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/StdPeriph_Driver/inc&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/Utilities&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/inc&quot;"/>
 								</option>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.2100012188" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="STM32L1"/>
@@ -74,6 +74,35 @@
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.2098987819" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.assembler.input.242414894" superClass="fr.ac6.managedbuild.tool.gnu.cross.assembler.input"/>
+							</tool>
+						</toolChain>
+					</folderInfo>
+					<folderInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.1834702526.83749282" name="/" resourcePath="inc">
+						<toolChain id="fr.ac6.managedbuild.toolchain.gnu.cross.exe.debug.733963414" name="Ac6 STM32 MCU GCC" superClass="fr.ac6.managedbuild.toolchain.gnu.cross.exe.debug" unusedChildren="">
+							<option id="fr.ac6.managedbuild.option.gnu.cross.prefix.33695999.953004143" name="Prefix" superClass="fr.ac6.managedbuild.option.gnu.cross.prefix.33695999"/>
+							<option id="fr.ac6.managedbuild.option.gnu.cross.mcu.1344989868.11670668" name="Mcu" superClass="fr.ac6.managedbuild.option.gnu.cross.mcu.1344989868"/>
+							<option id="fr.ac6.managedbuild.option.gnu.cross.board.260074110.1775876626" name="Board" superClass="fr.ac6.managedbuild.option.gnu.cross.board.260074110"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="fr.ac6.managedbuild.targetPlatform.gnu.cross" isAbstract="false" osList="all" superClass="fr.ac6.managedbuild.targetPlatform.gnu.cross"/>
+							<tool id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.983439557" name="MCU GCC Compiler" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.1560321302">
+								<option id="fr.ac6.managedbuild.gnu.c.compiler.option.optimization.level.765092287" name="Optimization Level" superClass="fr.ac6.managedbuild.gnu.c.compiler.option.optimization.level"/>
+								<option id="gnu.c.compiler.option.include.paths.1460714584" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/inc&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/CMSIS/core&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/CMSIS/device&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/StdPeriph_Driver/inc&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/Utilities&quot;"/>
+								</option>
+								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c.1127875617" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c"/>
+								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.s.1935529858" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.s"/>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1208879593" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="fr.ac6.managedbuild.tool.gnu.cross.cpp.compiler.917672068" name="MCU G++ Compiler" superClass="fr.ac6.managedbuild.tool.gnu.cross.cpp.compiler.539211912"/>
+							<tool id="fr.ac6.managedbuild.tool.gnu.cross.c.linker.1737787658" name="MCU GCC Linker" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.linker.1149805223"/>
+							<tool id="fr.ac6.managedbuild.tool.gnu.cross.cpp.linker.286101056" name="MCU G++ Linker" superClass="fr.ac6.managedbuild.tool.gnu.cross.cpp.linker.206869445"/>
+							<tool id="fr.ac6.managedbuild.tool.gnu.archiver.1008197042" name="MCU GCC Archiver" superClass="fr.ac6.managedbuild.tool.gnu.archiver.79575434"/>
+							<tool id="fr.ac6.managedbuild.tool.gnu.cross.assembler.1326175009" name="MCU GCC Assembler" superClass="fr.ac6.managedbuild.tool.gnu.cross.assembler.1571851759">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1582527965" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+								<inputType id="fr.ac6.managedbuild.tool.gnu.cross.assembler.input.148545530" superClass="fr.ac6.managedbuild.tool.gnu.cross.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
@@ -189,17 +218,18 @@
 			<resource resourceType="PROJECT" workspacePath="/Measons"/>
 		</configuration>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		<scannerConfigBuildInfo instanceId="fr.ac6.managedbuild.config.gnu.cross.exe.release.1745750207;fr.ac6.managedbuild.config.gnu.cross.exe.release.1745750207.;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.2131835694;cdt.managedbuild.tool.gnu.c.compiler.input.609211001">
+		<scannerConfigBuildInfo instanceId="fr.ac6.managedbuild.config.gnu.cross.exe.debug.1834702526;fr.ac6.managedbuild.config.gnu.cross.exe.debug.1834702526.;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.1560321302;cdt.managedbuild.tool.gnu.c.compiler.input.185798654">
 			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="fr.ac6.managedbuild.config.gnu.cross.exe.debug.1834702526;fr.ac6.managedbuild.config.gnu.cross.exe.debug.1834702526.;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.1560321302;cdt.managedbuild.tool.gnu.c.compiler.input.185798654">
+		<scannerConfigBuildInfo instanceId="fr.ac6.managedbuild.config.gnu.cross.exe.release.1745750207;fr.ac6.managedbuild.config.gnu.cross.exe.release.1745750207.;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.2131835694;cdt.managedbuild.tool.gnu.c.compiler.input.609211001">
 			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="fr.ac6.managedbuild.config.gnu.cross.exe.debug.1834702526;fr.ac6.managedbuild.config.gnu.cross.exe.debug.1834702526.;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.1560321302;fr.ac6.managedbuild.tool.gnu.cross.c.compiler.input.c.1275742815">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>
-	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
+	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
 </cproject>

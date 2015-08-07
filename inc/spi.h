@@ -8,6 +8,7 @@
 #ifndef SPI_H_
 #define SPI_H_
 
+#include "stm32l1xx.h"
 
 #define SPI_MAX_NUM_DEVICES 3
 #define SPI_FLASH				0

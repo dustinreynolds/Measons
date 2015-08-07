@@ -60,6 +60,10 @@
             <description></description>
             <sequence value="h[CA] h[00] h[05] h[0D] h[00] h[11] h[01] h[01] h[01] h[11] h[22] h[33] h[44] h[55] h[66] h[77] h[88] h[4A] h[AB]" />
         </SequenceItem>
+        <SequenceItem name="stuff 00,11 - onewire real id">
+            <description></description>
+            <sequence value="h[CA] h[00] h[05] h[0D] h[00] h[11] h[01] h[01] h[01] h[11] h[22] h[33] h[44] h[55] h[66] h[77] h[88] h[4A] h[AB]" />
+        </SequenceItem>
         <SequenceItem name="stuff 00,01 - role mcc 0a 20">
             <description></description>
             <sequence value="h[CA] h[00] h[05] h[05] h[00] h[01] h[02] h[0A] h[20] h[01] h[A5]" />
@@ -67,6 +71,10 @@
         <SequenceItem name="00,06 redo init">
             <description></description>
             <sequence value="h[CA] h[00] h[06] h[00] h[0A] h[96]" />
+        </SequenceItem>
+        <SequenceItem name="stuff 00,01 - role general ">
+            <description></description>
+            <sequence value="h[CA] h[00] h[05] h[05] h[00] h[01] h[01] h[0A] h[20] h[58] h[F5]" />
         </SequenceItem>
     </ItemList>
 </HtermSequenceFile>

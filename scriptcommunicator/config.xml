@@ -6,10 +6,10 @@
   <socketSetting adress="" connectionType="0" ownPort="0" partnerPort="0" socketType="Tcp client"/>
   <cheetahSpiSetting baudRate="12000" chipSelect="1" mode="0" port="0"/>
   <pcanSetting baudRate="0" busOffAutoReset="1" channel="0" filterExtended="1" filterFrom="00000000" filterTo="1FFFFFFF" powerSupply="0"/>
-  <sendWindow cyclicAreaSplitter="293:292" cyclicScript="/home/dustin/Important/Robotics/ScriptCommunicator_03_03_linux_64_bit/exampleScripts/SequenceScripts/sequenceSendScript.js" interactiveConsoleCheckBox="1" isConnected="0" sendString="00 01 02 03 04 05 06 07 08" sendStringFormat="hex" sendStringPause="0" sendStringRepetition="0" sequenceFileName="/home/dustin/Important/Robotics/STM32/STM32/Measons/scriptcommunicator/sequences.xml" windowSplitter="327:316"/>
-  <mainWindowPositionAndSize height="1056" left="1920" splitterSizes="1589:305" toolBoxIndex="0" top="0" width="1920"/>
+  <sendWindow cyclicAreaSplitter="48:48" cyclicScript="/home/dustin/Important/Robotics/ScriptCommunicator_03_03_linux_64_bit/exampleScripts/SequenceScripts/sequenceSendScript.js" interactiveConsoleCheckBox="1" isConnected="0" sendString="00 01 02 03 04 05 06 07 08" sendStringFormat="hex" sendStringPause="0" sendStringRepetition="0" sequenceFileName="/home/dustin/Important/Robotics/STM32/STM32/Measons/scriptcommunicator/sequences.xml" windowSplitter="13:13"/>
+  <mainWindowPositionAndSize height="1056" left="1920" splitterSizes="1589:305" toolBoxIndex="1" top="0" width="1920"/>
   <sendWindowPositionAndSize height="732" left="1103" top="157" visible="0" width="631"/>
   <settingsDialogPositionAndSize height="454" left="1000" top="104" visible="0" width="570"/>
   <scriptWindowPositionAndSize height="531" left="1124" top="131" visible="0" width="695"/>
-  <scriptWindow scriptConfigFileName="/home/dustin/Documents/ScriptCommunicator_3_03/inititalScripts.xml" scriptEditorPath="" splitterSize1="70" splitterSize2="395"/>
+  <scriptWindow scriptConfigFileName="/home/dustin/Documents/ScriptCommunicator_3_03/inititalScripts.xml" scriptEditorPath="" splitterSize1="13" splitterSize2="13"/>
 </settings>

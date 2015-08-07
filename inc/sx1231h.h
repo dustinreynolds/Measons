@@ -1321,14 +1321,22 @@
 *******************************************************************/
 #define RF_FRAME_TIMEOUT(BitRate) (uint16_t)(double)((((double)((uint32_t)RF_BUFFER_SIZE * (uint32_t)8 *((uint32_t)4  + (uint32_t)1)) / (double)((uint32_t)4 * (uint32_t)BitRate)) * (double)128) + (double)1)
 
+typedef enum {
+	SX1231H_CHECK_READY = 0x00,
+	SX1231H_CHECK_TIMEOUT,
+	SX1231H_CHECK_NOT_READY,
+} sx1231h_check_t;
+
 
 uint8_t sx1231h_init(uint8_t spi_device_num);
 uint8_t sx1231h_present(uint8_t spi_device_num);
 void sx1231h_dump_select_regs(void);
 uint8_t sx1231h_sendFrameStart(uint8_t spi_device_num, uint8_t *buffer, uint8_t size);
 uint8_t sx1231h_sendFrameWait(uint8_t spi_device_num);
+sx1231h_check_t sx1231h_sendFrameWaitCheck(uint8_t spi_device_num);
 uint8_t sx1231h_receiveFrameStart(uint8_t spi_device_num);
 uint8_t sx1231h_receiveFrameWait(uint8_t spi_device_num, uint8_t *buffer, uint8_t * size);
+sx1231h_check_t sx1231h_receiveWaitCheck(uint8_t spi_device_num);
 void sx1231h_set_encryption_state(uint8_t spi_device_num, bool aes_state);
 void sx1231h_set_encryption_key(uint8_t spi_device_num, uint8_t * aes_key);
 void sx1231h_set_power(uint8_t spi_device_num, int8_t power_level);

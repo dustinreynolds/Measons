@@ -74,6 +74,8 @@ void onewire_Init(onewire_port_t OWx){
 	OW_devices[OWx].config.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	OW_devices[OWx].config.GPIO_Speed = GPIO_Speed_40MHz;
 	GPIO_Init(OW_devices[OWx].port, &(OW_devices[OWx].config));
+
+	OW_devices[OWx].port->BSRRL = OW_devices[OWx].pin;
 }
 void onewire_write(onewire_port_t OWx, onewire_level_t state){
 	if (state == onewire_high){
@@ -180,14 +182,14 @@ void onewire_read_latest_ROM(uint8_t * rom){
 	memcpy(rom, ROM_NO, sizeof(ROM_NO));
 }
 
-void onewire_read_temp(onewire_port_t OWx, uint8_t rom[8]){
+onewire_error_t onewire_read_temp(onewire_port_t OWx, uint8_t rom[8], uint16_t * temperature){
 	uint8_t presence, i, crc;
-	uint8_t buffer[9], pbuf[40];
+	uint8_t buffer[9];
 	uint16_t temp;
 	presence = onewire_sendResetBasic(OWx);
 
 	if (!presence)
-		return;
+		return ONEWIRE_NO_PRESENCE;
 	onewire_sendByte(OWx, onewire_match_rom);
 
 	for (i=0; i < 8; i++){
@@ -217,12 +219,13 @@ void onewire_read_temp(onewire_port_t OWx, uint8_t rom[8]){
 	if (crc8 == crc){
 		//good data
 		temp = (uint16_t)((uint16_t)buffer[1] << 8) | buffer[0];
-		sprintf(pbuf,"Good data, temperature is %d %f C = %f F\r\n", temp, ((float)temp/16.0), (((float)temp/16.0)*9.0/5.0 + 32.0));
-		uart_OutString(pbuf);
+		printSerial(USART2, "Good data, temperature is %d %f C = %f F\r\n", temp, ((float)temp/16.0), (((float)temp/16.0)*9.0/5.0 + 32.0));
+		*temperature = temp;
 	}else{
-		sprintf(pbuf,"Bad data %d %d\r\n", crc, crc8);
-		uart_OutString(pbuf);
+		printSerial(USART2,"Bad data %d %d\r\n", crc, crc8);
+		return ONEWIRE_NO_PRESENCE;
 	}
+	return ONEWIRE_NO_ERROR;
 }
 
 void onewire_trigger_temp(onewire_port_t OWx){
@@ -238,20 +241,25 @@ void onewire_trigger_temp(onewire_port_t OWx){
 }
 
 //can only be used when powered directly
-void onewire_read_stored_temp(onewire_port_t OWx, uint8_t rom[8]){
+onewire_error_t onewire_read_stored_temp(onewire_port_t OWx, uint8_t rom[8], uint16_t * temperature){
 	uint8_t presence, i, crc, is_done = 0;
 	uint8_t buffer[9], pbuf[60];
 	uint16_t temp;
+	uint16_t timeout = 0;
 
 	//check that it's done before resetting
+	timeout = 0;
 	while(!is_done){
 		is_done = onewire_ReadBasic(OWx);
 		delayms(1);
+		if (timeout++ > 10000){
+			break;
+		}
 	}
 
 	presence = onewire_sendResetBasic(OWx);
 	if (!presence)
-		return;
+		return ONEWIRE_NO_PRESENCE;
 
 	onewire_sendByte(OWx, onewire_match_rom);
 
@@ -270,12 +278,13 @@ void onewire_read_stored_temp(onewire_port_t OWx, uint8_t rom[8]){
 	if (crc8 == crc){
 		//good data
 		temp = (uint16_t)((uint16_t)buffer[1] << 8) | buffer[0];
-		sprintf(pbuf,"Good trig data, temperature is %d %f C = %f F\r\n", temp, ((float)temp/16.0), (((float)temp/16.0)*9.0/5.0 + 32.0));
-		uart_OutString(pbuf);
+		*temperature = temp;
+		printSerial(USART2,"Good trig data, temperature is %d %f C = %f F\r\n", temp, ((float)temp/16.0), (((float)temp/16.0)*9.0/5.0 + 32.0));
+		return ONEWIRE_NO_ERROR;
 	}else{
-		sprintf(pbuf,"Bad trig data %d %d\r\n", crc, crc8);
-		uart_OutString(pbuf);
+		printSerial(USART2,"Bad trig data %d %d\r\n", crc, crc8);
 	}
+	return ONEWIRE_NO_PRESENCE;
 }
 
 /*

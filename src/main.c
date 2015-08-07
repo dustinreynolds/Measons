@@ -62,6 +62,7 @@ int main(void)
 	USART_TypeDef * USARTx = USART2;
 	parser_t eeprom_parser;
 	config_t eeprom_config;
+	static uint8_t role_setup = 0;
 
 	packet_eeprom_init_config(&eeprom_config);
 	//init_RCC_Configuration();
@@ -111,18 +112,18 @@ int main(void)
 	GPIOB->BSRRH |= GPIO_Pin_6;
 	GPIOA->BSRRH |= GPIO_Pin_8;
 
+	role_init(eeprom_config);
 	//scan for new hardware not described in config (new sensors)
-	init_search_new_hardware(&eeprom_config);
-	packet_eeprom_print_configuration(USARTx, eeprom_config);
-
-
-	Address = DATA_EEPROM_START_ADDR;
-	packet_eeprom_save_configuration(&Address, eeprom_config); //rewrite eeprom with newly discovered sensors.
+	//should modify to determine if new hardware is actually detected, and then
+	// call save configuration
+	//init_search_new_hardware(&eeprom_config);
+	//packet_eeprom_print_configuration(USARTx, eeprom_config);
+	//Address = DATA_EEPROM_START_ADDR;
+	//packet_eeprom_save_configuration(&Address, eeprom_config); //rewrite eeprom with newly discovered sensors.
 
 	packet_parser_init(&eeprom_parser);
 
 	while(1){
-
 		uint16_t Data;
 		packet_eeprom_t packet_result;
 
@@ -211,6 +212,8 @@ int main(void)
 						packet_eeprom_save_configuration(&Address, eeprom_config); //rewrite eeprom with newly discovered sensors.
 
 						packet_parser_init(&eeprom_parser);
+
+						role_init(eeprom_config);
 					}
 				}
 
@@ -223,5 +226,8 @@ int main(void)
 				uart_OutString(USARTx, buffer);
 			}
 		}
+
+		//Check role
+		role_check(&eeprom_config);
 	}
 }

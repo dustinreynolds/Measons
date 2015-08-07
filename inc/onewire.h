@@ -8,6 +8,9 @@
 #ifndef __ONEWIRE_H_
 #define __ONEWIRE_H_
 
+#include "stdint.h"
+#include "stm32l1xx.h"
+
 #define OW_MAX_SENSORS 20
 
 #define OW_FALSE 0
@@ -62,7 +65,10 @@ typedef struct{
 	GPIO_InitTypeDef config;
 } OW_Device_t;
 
-
+typedef enum {
+	ONEWIRE_NO_ERROR = 0x00,
+	ONEWIRE_NO_PRESENCE = 0x01,
+} onewire_error_t;
 
 
 
@@ -70,9 +76,9 @@ void onewire_Init(onewire_port_t OWx);
 
 uint8_t onewire_sendResetBasic(onewire_port_t OWx);
 void onewire_read_latest_ROM(uint8_t * rom);
-void onewire_read_temp(onewire_port_t OWx, uint8_t rom[8]);
+onewire_error_t onewire_read_temp(onewire_port_t OWx, uint8_t rom[8], uint16_t * temperature);
 void onewire_trigger_temp(onewire_port_t OWx);
-void onewire_read_stored_temp(onewire_port_t OWx, uint8_t rom[8]);
+onewire_error_t onewire_read_stored_temp(onewire_port_t OWx, uint8_t rom[8], uint16_t * temperature);
 
 // method declarations for Maxim 1-wire
 int  OWFirst(onewire_port_t OWx);

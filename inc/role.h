@@ -1,8 +1,8 @@
 /*
- * sx1231h_test.h
+ * role.h
  *
- *  Created on: Jun 27, 2015
- *      Author: Dustin
+ *  Created on: Jul 23, 2015
+ *      Author: dustin
  *
  * Copyright (c) 2015, Dustin Reynolds
  * All rights reserved.
@@ -33,42 +33,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SX1231H_TEST_H_
-#define SX1231H_TEST_H_
-
-#define PRINT_CRLF 	1
-#define OMIT_CRLF	0
+#ifndef ROLE_H_
+#define ROLE_H_
 
 typedef enum {
-	TEST_STRINGS_TEST_PRESENCE = 0,
-	TEST_STRINGS_BASIC_RX_TX,
-	TEST_STRINGS_DIFF_SYNC,
-	TEST_STRINGS_AES_ON,
-	TEST_STRINGS_AES_DIFF,
-	TEST_STRINGS_NODE_ADDRESS,
-	TEST_STRINGS_BROADCAST_ADDRESS,
-	TEST_STRINGS_NODE_WRONG_ADDRESS,
-	TEST_STRINGS_BROADCAST_NOT_ENABLED,
-	TEST_STRINGS_RSSI_THRESHOLD,
-	TEST_STRINGS_FREQ_HOP,
-	TEST_STRINGS_FREQ_HOP_FAILURE,
-	TEST_STRINGS_RX_TIMEOUT_HIGH,
-	TEST_STRINGS_RX_TIMEOUT_FAILURE,
-	TEST_STRINGS_VOID, //Be sure to add new tests to sx1231h_test and sx1231_test_identifier
-} test_strings_t;
+	ERROR_ROLE_NO_ERROR = 0x00,
+	ERROR_ROLE_RFM69_NOT_DETECTED,
+} error_role_t;
 
-typedef struct {
-	test_strings_t testIdentifier;
-	uint8_t (*function)(test_strings_t ,uint8_t, uint8_t);
-} pTable_t;
+error_role_t role_init(config_t config);
+void role_check(config_t * config);
+void role_mcc_execute_packet(packet_sx1231h_t * packet);
 
-uint8_t sx1231h_test_presence(test_strings_t identifier, uint8_t dev1, uint8_t dev2);
-uint8_t sx1231h_test_single_change(test_strings_t identifier, uint8_t dev1, uint8_t dev2);
-uint8_t sx1231h_test_failure(test_strings_t identifier, uint8_t dev1, uint8_t dev2);
-uint8_t sx1231h_test_rssi(test_strings_t identifier, uint8_t dev1, uint8_t dev2);
-uint8_t sx1231h_test_freq_hop(test_strings_t identifier, uint8_t dev1, uint8_t dev2);
-uint8_t sx1231h_find_lowest_settings(uint8_t dev1, uint8_t dev2);
-uint8_t sx1231h_wirelessTesting(uint8_t dev1, uint8_t dev2);
-uint8_t sx1231h_test_wirelessTesting(uint8_t dev1, uint8_t dev2);
-
-#endif /* SX1231H_TEST_H_ */
+#endif /* ROLE_H_ */
