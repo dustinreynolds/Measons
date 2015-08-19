@@ -101,6 +101,11 @@ int main(void)
 
 	//initialize corresponding GPIOs
 	init_setup_configuration(eeprom_config);
+
+	init_search_new_hardware(&eeprom_config);
+
+	Address = DATA_EEPROM_START_ADDR;
+	packet_eeprom_save_configuration(&Address, eeprom_config); //rewrite eeprom with newly discovered sensors.
 	//init_GPIO_Configuration();
 	GPIOB->BSRRL |= GPIO_Pin_4;
 	GPIOB->BSRRL |= GPIO_Pin_5;
@@ -214,6 +219,74 @@ int main(void)
 						packet_parser_init(&eeprom_parser);
 
 						role_init(eeprom_config);
+					}
+					if (eeprom_parser.packet.sub_id == 0x07){
+
+						if (eeprom_config.rtc.i2c_rtc_enabled){
+							if (eeprom_config.i2c[eeprom_config.rtc.i2c_rtc_number].type == I2C_TYPE_RTC_DS3231){
+								uint8_t response;
+								float temperature;
+								init_3v3RegOn(true);
+								delayms(10);
+
+								response = i2c_ds3231_read_temperature((eeprom_config.i2c[eeprom_config.rtc.i2c_rtc_number].bus >> 1),&temperature);
+								if (response == 0){
+									char buffer[30];
+									printSerial(USARTx, "DS3231 Present, current temperature %f,", temperature);
+									eeprom_config.i2c[eeprom_config.rtc.i2c_rtc_number].enabled = 1;
+								}else{
+									eeprom_config.i2c[eeprom_config.rtc.i2c_rtc_number].enabled = 0;
+								}
+
+								init_3v3RegOn(false);
+							}
+						}
+					}
+					if (eeprom_parser.packet.sub_id == 0x08){
+						if (eeprom_config.rtc.i2c_rtc_enabled){
+							DS3231_time_t time;
+							DS3231_date_t date;
+							uint8_t result;
+							//set RTC date
+							init_3v3RegOn(true);
+							delayms(500);
+
+							date.year = eeprom_parser.packet.payload[0];
+							date.month = eeprom_parser.packet.payload[1];
+							date.date = eeprom_parser.packet.payload[2];
+							date.day = eeprom_parser.packet.payload[3]; //1 to 7 day of week
+
+							time.is_ampm_time = eeprom_parser.packet.payload[4];
+							time.am_pm = eeprom_parser.packet.payload[5];
+							time.hours = eeprom_parser.packet.payload[6];
+							time.minutes = eeprom_parser.packet.payload[7];
+							time.seconds = eeprom_parser.packet.payload[8];
+
+							result = i2c_ds3231_set_time_date(eeprom_config.i2c[eeprom_config.rtc.i2c_rtc_number].bus>>1, time, date);
+
+							delayms(500);
+
+							//Read it back
+							i2c_ds3231_read_time_date(eeprom_config.i2c[eeprom_config.rtc.i2c_rtc_number].bus>>1, &time, &date);
+							printSerial(USARTx, "DS3231 Date and Time ");
+							printSerial(USARTx, " YY:MM:DD HH-MM-SS %02d:%02d:%02d %02d-%02d-%02d\r\n",
+									date.year, date.month, date.date, time.hours, time.minutes, time.seconds);
+
+							init_3v3RegOn(false);
+						}
+					}
+					if (eeprom_parser.packet.sub_id == 0x09){
+						DS3231_time_t time;
+						DS3231_date_t date;
+
+						init_3v3RegOn(true);
+						delayms(10);
+						i2c_ds3231_read_time_date(eeprom_config.i2c[eeprom_config.rtc.i2c_rtc_number].bus>>1, &time, &date);
+						printSerial(USARTx, "DS3231 Date and Time ");
+						printSerial(USARTx, " YY:MM:DD HH-MM-SS %02d:%02d:%02d %02d-%02d-%02d\r\n",
+								date.year, date.month, date.date, time.hours, time.minutes, time.seconds);
+
+						init_3v3RegOn(false);
 					}
 				}
 

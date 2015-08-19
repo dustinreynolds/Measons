@@ -43,6 +43,6 @@ typedef enum {
 
 error_role_t role_init(config_t config);
 void role_check(config_t * config);
-void role_mcc_execute_packet(packet_sx1231h_t * packet);
+void role_mcc_execute_packet(config_t * config, packet_sx1231h_t * packet);
 
 #endif /* ROLE_H_ */

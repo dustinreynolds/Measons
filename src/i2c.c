@@ -37,151 +37,197 @@
 #include "string.h"
 #include "i2c.h"
 
-uint8_t _i2c_start_address(I2C_TypeDef* I2Cx, uint8_t address, uint8_t I2C_Direction);
-uint8_t _i2c_stop(I2C_TypeDef* I2Cx);
-uint8_t _i2c_write(I2C_TypeDef* I2Cx, uint8_t byte);
-uint8_t _i2c_read(I2C_TypeDef* I2Cx, uint8_t ack, uint8_t * byte);
+static i2c_port_t i2c_port [2];
 
-void i2c_init(void){
-	I2C_InitTypeDef I2C_InitStructure;
+uint8_t _i2c_start_address(i2c_bus_t bus, uint8_t address, uint8_t I2C_Direction);
+uint8_t _i2c_stop(i2c_bus_t bus);
+uint8_t _i2c_write(i2c_bus_t bus, uint8_t byte);
+uint8_t _i2c_read(i2c_bus_t bus, uint8_t ack, uint8_t * byte);
 
-	I2C_StructInit(&I2C_InitStructure);
+void i2c_init(i2c_bus_t bus){
+	if (bus == I2C_BUS_1){
+		RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C1, ENABLE);
 
-	I2C_InitStructure.I2C_ClockSpeed = 100000;
-	I2C_InitStructure.I2C_Mode = I2C_Mode_I2C;
-	I2C_InitStructure.I2C_DutyCycle = I2C_DutyCycle_2;
-	I2C_InitStructure.I2C_Ack = I2C_Ack_Enable;
-	I2C_InitStructure.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
+		//unique port specific details
+		i2c_port[bus].gpio_port = GPIOB;
+		i2c_port[bus].i2c_port = I2C1;
+		i2c_port[bus].i2c_af = GPIO_AF_I2C1;
+		i2c_port[bus].pin_scl = GPIO_Pin_8;
+		i2c_port[bus].pin_sda = GPIO_Pin_9;
+		i2c_port[bus].pin_scl_source = GPIO_PinSource8;
+		i2c_port[bus].pin_sda_source = GPIO_PinSource9;
 
-	I2C_Init(I2C2, &I2C_InitStructure);
+		i2c_port[bus].gpio.GPIO_Pin = i2c_port[bus].pin_scl | i2c_port[bus].pin_sda;
+		i2c_port[bus].gpio.GPIO_Mode = GPIO_Mode_AF;
+		i2c_port[bus].gpio.GPIO_OType = GPIO_OType_OD;
+		i2c_port[bus].gpio.GPIO_PuPd = GPIO_PuPd_NOPULL;
+		i2c_port[bus].gpio.GPIO_Speed = GPIO_Speed_40MHz;
+		GPIO_Init(i2c_port[bus].gpio_port, &i2c_port[bus].gpio);
 
-	I2C_Cmd(I2C2, ENABLE);
+		GPIO_PinAFConfig(i2c_port[bus].gpio_port, i2c_port[bus].pin_scl_source, i2c_port[bus].i2c_af);
+		GPIO_PinAFConfig(i2c_port[bus].gpio_port, i2c_port[bus].pin_sda_source, i2c_port[bus].i2c_af);
+
+		I2C_StructInit(&i2c_port[bus].i2c);
+
+		i2c_port[bus].i2c.I2C_ClockSpeed = 100000;
+		i2c_port[bus].i2c.I2C_Mode = I2C_Mode_I2C;
+		i2c_port[bus].i2c.I2C_DutyCycle = I2C_DutyCycle_2;
+		i2c_port[bus].i2c.I2C_Ack = I2C_Ack_Enable;
+		i2c_port[bus].i2c.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
+
+		I2C_Init(i2c_port[bus].i2c_port, &i2c_port[bus].i2c);
+
+		I2C_Cmd(i2c_port[bus].i2c_port, ENABLE);
+
+	}else if (bus == I2C_BUS_2){
+		RCC_APB1PeriphClockCmd(RCC_APB1Periph_I2C2, ENABLE);
+
+		//Unique port specific details
+		i2c_port[bus].gpio_port = GPIOB;
+		i2c_port[bus].i2c_port = I2C2;
+		i2c_port[bus].i2c_af = GPIO_AF_I2C2;
+		i2c_port[bus].pin_scl = GPIO_Pin_10;
+		i2c_port[bus].pin_sda = GPIO_Pin_11;
+		i2c_port[bus].pin_scl_source = GPIO_PinSource10;
+		i2c_port[bus].pin_sda_source = GPIO_PinSource11;
+
+		i2c_port[bus].gpio.GPIO_Pin = i2c_port[bus].pin_scl | i2c_port[bus].pin_sda;
+		i2c_port[bus].gpio.GPIO_Mode = GPIO_Mode_AF;
+		i2c_port[bus].gpio.GPIO_OType = GPIO_OType_OD;
+		i2c_port[bus].gpio.GPIO_PuPd = GPIO_PuPd_NOPULL;
+		i2c_port[bus].gpio.GPIO_Speed = GPIO_Speed_40MHz;
+		GPIO_Init(i2c_port[bus].gpio_port, &i2c_port[bus].gpio);
+
+		GPIO_PinAFConfig(i2c_port[bus].gpio_port, i2c_port[bus].pin_scl_source, i2c_port[bus].i2c_af);
+		GPIO_PinAFConfig(i2c_port[bus].gpio_port, i2c_port[bus].pin_sda_source, i2c_port[bus].i2c_af);
+
+		I2C_StructInit(&i2c_port[bus].i2c);
+
+		i2c_port[bus].i2c.I2C_ClockSpeed = 100000;
+		i2c_port[bus].i2c.I2C_Mode = I2C_Mode_I2C;
+		i2c_port[bus].i2c.I2C_DutyCycle = I2C_DutyCycle_2;
+		i2c_port[bus].i2c.I2C_Ack = I2C_Ack_Enable;
+		i2c_port[bus].i2c.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
+
+		I2C_Init(i2c_port[bus].i2c_port, &i2c_port[bus].i2c);
+
+		I2C_Cmd(i2c_port[bus].i2c_port, ENABLE);
+	}
 }
 
-void i2c_ds3231_reset(I2C_TypeDef* I2Cx){
+void i2c_ds3231_reset(i2c_bus_t bus){
 	uint32_t count = 0;
-	GPIO_InitTypeDef GPIO_InitStructure;
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_40MHz;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
 
+	i2c_port[bus].gpio.GPIO_Pin = i2c_port[bus].pin_scl;
+	i2c_port[bus].gpio.GPIO_Mode = GPIO_Mode_OUT;
+	GPIO_Init(i2c_port[bus].gpio_port, &i2c_port[bus].gpio);
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_11;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_40MHz;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
+	i2c_port[bus].gpio.GPIO_Pin = i2c_port[bus].pin_sda;
+	i2c_port[bus].gpio.GPIO_Mode = GPIO_Mode_IN;
+	GPIO_Init(i2c_port[bus].gpio_port, &i2c_port[bus].gpio);
 
 	//Toggle SCL until SDA is in a high state
 	while(count < 1000){
-		if(GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11) == 1){
+		if(GPIO_ReadInputDataBit(i2c_port[bus].gpio_port, i2c_port[bus].pin_sda) == 1){
 			break;
 		}
-		GPIOB->ODR ^= GPIO_Pin_10; //toggle SCL
+		i2c_port[bus].gpio_port->ODR ^= i2c_port[bus].pin_scl; //toggle SCL
 		delayms(1);
 	}
+	i2c_port[bus].gpio.GPIO_Pin = i2c_port[bus].pin_scl | i2c_port[bus].pin_sda;
+	i2c_port[bus].gpio.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_Init(i2c_port[bus].gpio_port, &i2c_port[bus].gpio);
 
-	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10 | GPIO_Pin_11;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-	GPIO_InitStructure.GPIO_OType = GPIO_OType_OD;
-	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_40MHz;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
-
-	GPIO_PinAFConfig(GPIOB, GPIO_PinSource10, GPIO_AF_I2C2);
-	GPIO_PinAFConfig(GPIOB, GPIO_PinSource11, GPIO_AF_I2C2);
+	GPIO_PinAFConfig(i2c_port[bus].gpio_port, i2c_port[bus].pin_scl_source, i2c_port[bus].i2c_af);
+	GPIO_PinAFConfig(i2c_port[bus].gpio_port, i2c_port[bus].pin_sda_source, i2c_port[bus].i2c_af);
 }
 
-uint8_t i2c_ds3231_init(I2C_TypeDef* I2Cx){
+uint8_t i2c_ds3231_init(i2c_bus_t bus){
 	uint8_t control_reg = 0x00;
 	uint8_t result;
 
 	control_reg = DS3231_CONTROL_RS2 | DS3231_CONTROL_RS1 | DS3231_CONTROL_INTCN;
-	result = i2c_ds3231_write_reg(I2Cx, DS3231_CONTROL_REG, control_reg);
+	result = i2c_ds3231_write_reg(bus, DS3231_CONTROL_REG, control_reg);
 	return result;
 }
-uint8_t i2c_ds3231_set_address(I2C_TypeDef* I2Cx, uint8_t address){
+uint8_t i2c_ds3231_set_address(i2c_bus_t bus, uint8_t address){
 	uint8_t result;
-	result = _i2c_start_address(I2Cx, DS3231_I2C_ADDR,I2C_Direction_Transmitter);
+	result = _i2c_start_address(bus, DS3231_I2C_ADDR,I2C_Direction_Transmitter);
 	if (result) return 1;
-	result = _i2c_write(I2Cx, address);
+	result = _i2c_write(bus, address);
 	if (result) return 1;
-	result = _i2c_stop(I2Cx);
+	result = _i2c_stop(bus);
 	if (result) return 1;
 	return 0;
 }
 
-uint8_t i2c_ds3231_write_reg(I2C_TypeDef* I2Cx, uint8_t address, uint8_t value){
+uint8_t i2c_ds3231_write_reg(i2c_bus_t bus, uint8_t address, uint8_t value){
 	uint8_t result;
-	result = _i2c_start_address(I2Cx, DS3231_I2C_ADDR,I2C_Direction_Transmitter);
+	result = _i2c_start_address(bus, DS3231_I2C_ADDR,I2C_Direction_Transmitter);
 	if (result) return 1;
-	result = _i2c_write(I2Cx, address);
+	result = _i2c_write(bus, address);
 	if (result) return 1;
-	result = _i2c_write(I2Cx, value);
+	result = _i2c_write(bus, value);
 	if (result) return 1;
-	result = _i2c_stop(I2Cx);
+	result = _i2c_stop(bus);
 	if (result) return 1;
 	return 0;
 }
 
-uint8_t i2c_ds3231_write_registers(I2C_TypeDef* I2Cx, uint8_t address, uint8_t * data, uint8_t count){
+uint8_t i2c_ds3231_write_registers(i2c_bus_t bus, uint8_t address, uint8_t * data, uint8_t count){
 	uint8_t result;
-	result = _i2c_start_address(I2Cx, DS3231_I2C_ADDR,I2C_Direction_Transmitter);
+	result = _i2c_start_address(bus, DS3231_I2C_ADDR,I2C_Direction_Transmitter);
 	if (result) return 1;
-	result = _i2c_write(I2Cx, address);
+	result = _i2c_write(bus, address);
 	if (result) return 1;
 	while (count-- > 0){
-		result = _i2c_write(I2Cx, *data++);
+		result = _i2c_write(bus, *data++);
 		if (result) return 1;
 	}
-	result = _i2c_stop(I2Cx);
+	result = _i2c_stop(bus);
 	if (result) return 1;
 	return 0;
 }
 
-uint8_t i2c_ds3231_read_register(I2C_TypeDef* I2Cx, uint8_t address, uint8_t * value){
+uint8_t i2c_ds3231_read_register(i2c_bus_t bus, uint8_t address, uint8_t * value){
 	uint8_t result;
-	result = i2c_ds3231_set_address(I2Cx, address);
+	result = i2c_ds3231_set_address(bus, address);
 	if (result) return  1;
 
-	result = _i2c_start_address(I2Cx, DS3231_I2C_ADDR,I2C_Direction_Receiver);
+	result = _i2c_start_address(bus, DS3231_I2C_ADDR,I2C_Direction_Receiver);
 	if (result) return  1;
-	result = _i2c_read(I2Cx, NACK, value);
+	result = _i2c_read(bus, NACK, value);
 	if (result) return  1;
 	return 0;
 }
 
-uint8_t i2c_ds3231_read_registers(I2C_TypeDef* I2Cx, uint8_t address, uint8_t * data, uint8_t count){
+uint8_t i2c_ds3231_read_registers(i2c_bus_t bus, uint8_t address, uint8_t * data, uint8_t count){
 	uint8_t result;
-	result = i2c_ds3231_set_address(I2Cx, address);
+	result = i2c_ds3231_set_address(bus, address);
 	if (result) return 1;
 
-	result = _i2c_start_address(I2Cx, DS3231_I2C_ADDR,I2C_Direction_Receiver);
+	result = _i2c_start_address(bus, DS3231_I2C_ADDR,I2C_Direction_Receiver);
 	if (result) return 1;
 	while (--count > 0){
-		result = _i2c_read(I2Cx, ACK, data++);
+		result = _i2c_read(bus, ACK, data++);
 		if (result) return 1;
 	}
-	result = _i2c_read(I2Cx, NACK, data);
+	result = _i2c_read(bus, NACK, data);
 	if (result) return 1;
 	return 0;
 }
 
-uint8_t i2c_ds3231_set_time_date(I2C_TypeDef* I2Cx, DS3231_time_t time, DS3231_date_t date){
+uint8_t i2c_ds3231_set_time_date(i2c_bus_t bus, DS3231_time_t time, DS3231_date_t date){
 	uint8_t reg;
 	uint8_t result;
 
 	//Write to registers
 	reg = ((time.seconds / 10) << 4 ) | time.seconds % 10;
-	result = i2c_ds3231_write_reg(I2Cx,DS3231_SECONDS_REG, reg);
+	result = i2c_ds3231_write_reg(bus,DS3231_SECONDS_REG, reg);
 	if (result) return 1;
 
 	reg = ((time.minutes / 10) << 4 ) | time.minutes % 10;
-	result = i2c_ds3231_write_reg(I2Cx,DS3231_MINUTES_REG, reg);
+	result = i2c_ds3231_write_reg(bus,DS3231_MINUTES_REG, reg);
 	if (result) return 1;
 
 	if(time.is_ampm_time){
@@ -189,30 +235,30 @@ uint8_t i2c_ds3231_set_time_date(I2C_TypeDef* I2Cx, DS3231_time_t time, DS3231_d
 	}else{
 		reg = (time.is_ampm_time << 6) | ((time.hours / 10) << 4 ) | time.hours % 10;
 	}
-	result = i2c_ds3231_write_reg(I2Cx,DS3231_HOUR_REG, reg);
+	result = i2c_ds3231_write_reg(bus,DS3231_HOUR_REG, reg);
 	if (result) return 1;
 
 	reg = date.day;
-	result = i2c_ds3231_write_reg(I2Cx,DS3231_DAY_REG, reg);
+	result = i2c_ds3231_write_reg(bus,DS3231_DAY_REG, reg);
 	if (result) return 1;
 
 	reg = ((date.date / 10) << 4 ) | date.date % 10;
-	result = i2c_ds3231_write_reg(I2Cx,DS3231_DATE_REG, reg);
+	result = i2c_ds3231_write_reg(bus,DS3231_DATE_REG, reg);
 	if (result) return 1;
 
 	reg = ((date.month / 10) << 4) | date.month % 10;
-	result = i2c_ds3231_write_reg(I2Cx,DS3231_MONTH_REG, reg);
+	result = i2c_ds3231_write_reg(bus,DS3231_MONTH_REG, reg);
 	if (result) return 1;
 
 	reg = ((date.year / 10) << 4) | date.year % 10;
-	result = i2c_ds3231_write_reg(I2Cx,DS3231_YEAR_REG, reg);
+	result = i2c_ds3231_write_reg(bus,DS3231_YEAR_REG, reg);
 	if (result) return 1;
 }
 
-uint8_t i2c_ds3231_read_time_date(I2C_TypeDef* I2Cx, DS3231_time_t * time, DS3231_date_t * date){
+uint8_t i2c_ds3231_read_time_date(i2c_bus_t bus, DS3231_time_t * time, DS3231_date_t * date){
 	uint8_t temp[7];
 	uint8_t result;
-	result = i2c_ds3231_read_registers(I2Cx, 0x00, temp, 7);
+	result = i2c_ds3231_read_registers(bus, 0x00, temp, 7);
 	if (result) return 1;
 
 	time->seconds = ((temp[0] & 0x70) >> 4) * 10 + (temp[0] & 0x0F);
@@ -235,10 +281,10 @@ uint8_t i2c_ds3231_read_time_date(I2C_TypeDef* I2Cx, DS3231_time_t * time, DS323
 	return 0;
 }
 
-uint8_t i2c_ds3231_read_temperature(I2C_TypeDef* I2Cx, float * temperature){
+uint8_t i2c_ds3231_read_temperature(i2c_bus_t bus, float * temperature){
 	uint8_t temp[2];
 	uint8_t result;
-	result = i2c_ds3231_read_registers(I2Cx, DS3231_MSB_TEMP_REG, temp, 2);
+	result = i2c_ds3231_read_registers(bus, DS3231_MSB_TEMP_REG, temp, 2);
 	if (result) return 1;
 	//http://ideone.com/seM4DH
 	if ((temp[0] & 0x80) > 0){
@@ -249,7 +295,7 @@ uint8_t i2c_ds3231_read_temperature(I2C_TypeDef* I2Cx, float * temperature){
 	return 0;
 }
 
-uint8_t i2c_ds3231_set_alarm_1(I2C_TypeDef* I2Cx, DS3231_alarm_t alarm){
+uint8_t i2c_ds3231_set_alarm_1(i2c_bus_t bus, DS3231_alarm_t alarm){
 	//given alarm settings, set alarm accordingly
 	uint8_t temp[4];
 	uint8_t result;
@@ -268,15 +314,15 @@ uint8_t i2c_ds3231_set_alarm_1(I2C_TypeDef* I2Cx, DS3231_alarm_t alarm){
 		temp[3] = (alarm.AMx[3] << 7) | (alarm.day_or_date << 6) | ((alarm.date / 10) << 4 ) | alarm.date % 10;
 	}
 
-	result = i2c_ds3231_write_registers(I2Cx, DS3231_ALARM_1_SECONDS_REG, temp, 4);
+	result = i2c_ds3231_write_registers(bus, DS3231_ALARM_1_SECONDS_REG, temp, 4);
 	if (result) return 1;
 	return 0;
 }
 
-uint8_t i2c_ds3231_read_alarm_1(I2C_TypeDef* I2Cx, DS3231_alarm_t * alarm){
+uint8_t i2c_ds3231_read_alarm_1(i2c_bus_t bus, DS3231_alarm_t * alarm){
 	uint8_t temp[4];
 	uint8_t result;
-	result = i2c_ds3231_read_registers(I2Cx, DS3231_ALARM_1_SECONDS_REG, temp, 4);
+	result = i2c_ds3231_read_registers(bus, DS3231_ALARM_1_SECONDS_REG, temp, 4);
 	if (result) return 1;
 
 	alarm->seconds = ((temp[0] & 0x70) >> 4) * 10 + (temp[0] & 0x0F);
@@ -308,7 +354,7 @@ uint8_t i2c_ds3231_read_alarm_1(I2C_TypeDef* I2Cx, DS3231_alarm_t * alarm){
 	return 0;
 }
 
-uint8_t i2c_ds3231_set_alarm_2(I2C_TypeDef* I2Cx, DS3231_alarm_t alarm){
+uint8_t i2c_ds3231_set_alarm_2(i2c_bus_t bus, DS3231_alarm_t alarm){
 	//given alarm settings, set alarm accordingly
 	uint8_t temp[3];
 	uint8_t result;
@@ -326,15 +372,15 @@ uint8_t i2c_ds3231_set_alarm_2(I2C_TypeDef* I2Cx, DS3231_alarm_t alarm){
 		temp[2] = (alarm.AMx[3] << 7) | (alarm.day_or_date << 6) | ((alarm.date / 10) << 4 ) | alarm.date % 10;
 	}
 
-	result = i2c_ds3231_write_registers(I2Cx, DS3231_ALARM_2_MINUTES_REG, temp, 3);
+	result = i2c_ds3231_write_registers(bus, DS3231_ALARM_2_MINUTES_REG, temp, 3);
 	if (result) return 1;
 	return 0;
 }
 
-uint8_t i2c_ds3231_read_alarm_2(I2C_TypeDef* I2Cx, DS3231_alarm_t * alarm){
+uint8_t i2c_ds3231_read_alarm_2(i2c_bus_t bus, DS3231_alarm_t * alarm){
 	uint8_t temp[3];
 	uint8_t result;
-	result = i2c_ds3231_read_registers(I2Cx, DS3231_ALARM_2_MINUTES_REG, temp, 3);
+	result = i2c_ds3231_read_registers(bus, DS3231_ALARM_2_MINUTES_REG, temp, 3);
 	if (result) return 1;
 
 	alarm->minutes = ((temp[0] & 0x70) >> 4) * 10 + (temp[0] & 0x0F);
@@ -364,27 +410,27 @@ uint8_t i2c_ds3231_read_alarm_2(I2C_TypeDef* I2Cx, DS3231_alarm_t * alarm){
 	return 0;
 }
 
-uint8_t i2c_ds3231_check_alarm_1(I2C_TypeDef* I2Cx){
+uint8_t i2c_ds3231_check_alarm_1(i2c_bus_t bus){
 	uint8_t temp;
-	i2c_ds3231_read_register(I2Cx, DS3231_CONTROL_STATUS_REG, &temp);
+	i2c_ds3231_read_register(bus, DS3231_CONTROL_STATUS_REG, &temp);
 
 	if ((temp & DS3231_CONTROL_STATUS_ALARM_1_FLAG) > 0){
 		//clear flag
 		temp = temp & ~DS3231_CONTROL_STATUS_ALARM_1_FLAG; //check this
-		i2c_ds3231_write_reg(I2Cx, DS3231_CONTROL_STATUS_REG,temp);
+		i2c_ds3231_write_reg(bus, DS3231_CONTROL_STATUS_REG,temp);
 
 		return 1;
 	}
 	return 0;
 }
-uint8_t i2c_ds3231_check_alarm_2(I2C_TypeDef* I2Cx){
+uint8_t i2c_ds3231_check_alarm_2(i2c_bus_t bus){
 	uint8_t temp;
-	i2c_ds3231_read_register(I2Cx, DS3231_CONTROL_STATUS_REG, &temp);
+	i2c_ds3231_read_register(bus, DS3231_CONTROL_STATUS_REG, &temp);
 
 	if ((temp & DS3231_CONTROL_STATUS_ALARM_2_FLAG) > 0){
 		//clear flag
 		temp = temp & ~DS3231_CONTROL_STATUS_ALARM_2_FLAG; //check this
-		i2c_ds3231_write_reg(I2Cx, DS3231_CONTROL_STATUS_REG,temp);
+		i2c_ds3231_write_reg(bus, DS3231_CONTROL_STATUS_REG,temp);
 
 		return 1;
 	}
@@ -553,7 +599,7 @@ uint8_t i2c_ds3231_test(void){
 	return 0;
 }
 
-uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx){
+uint8_t i2c_ds3231_test_rtc(i2c_bus_t bus){
 	DS3231_time_t time1, time2;
 	DS3231_date_t date1, date2;
 	uint8_t error_count = 0;
@@ -568,12 +614,12 @@ uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx){
 	date1.date = 14;
 	date1.month = 6;
 	date1.year = 15;
-	result = i2c_ds3231_set_time_date(I2Cx, time1, date1);
+	result = i2c_ds3231_set_time_date(bus, time1, date1);
 	if(result) return 1;
 
 	delayms(2100);
 
-	result = i2c_ds3231_read_time_date(I2Cx, &time2, &date2);
+	result = i2c_ds3231_read_time_date(bus, &time2, &date2);
 	if(result) return 1;
 
 	if(time2.seconds != (time1.seconds + 2) ){
@@ -623,16 +669,16 @@ uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx){
 			alarm1.AMx[0] = 1; alarm1.AMx[1] = 1;alarm1.AMx[2] = 1;alarm1.AMx[3] = 1;
 			alarm1.day_or_date = DS3231_ALARM_DATE;
 
-			result += i2c_ds3231_set_time_date(I2Cx, time1, date1);
+			result += i2c_ds3231_set_time_date(bus, time1, date1);
 
-			result += i2c_ds3231_set_alarm_1(I2Cx, alarm1);
-			i2c_ds3231_check_alarm_1(I2Cx); //clear any existing alarm states
-			result += i2c_ds3231_read_alarm_1(I2Cx, &alarm1v);
+			result += i2c_ds3231_set_alarm_1(bus, alarm1);
+			i2c_ds3231_check_alarm_1(bus); //clear any existing alarm states
+			result += i2c_ds3231_read_alarm_1(bus, &alarm1v);
 			//wait and check
 			delayms(800);
-			alarm1_state[0] = i2c_ds3231_check_alarm_1(I2Cx);
+			alarm1_state[0] = i2c_ds3231_check_alarm_1(bus);
 			delayms(300);
-			alarm1_state[1] = i2c_ds3231_check_alarm_1(I2Cx);
+			alarm1_state[1] = i2c_ds3231_check_alarm_1(bus);
 			if(alarm1_state[0] != 0){
 				error_count++;
 			}if (alarm1_state[1] != 1){
@@ -697,16 +743,16 @@ uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx){
 			alarm1.AMx[0] = 0; alarm1.AMx[1] = 1;alarm1.AMx[2] = 1;alarm1.AMx[3] = 1;
 			alarm1.day_or_date = DS3231_ALARM_DATE;
 
-			result += i2c_ds3231_set_time_date(I2Cx, time1, date1);
+			result += i2c_ds3231_set_time_date(bus, time1, date1);
 
-			result += i2c_ds3231_set_alarm_1(I2Cx, alarm1);
-			i2c_ds3231_check_alarm_1(I2Cx); //clear any existing alarm states
+			result += i2c_ds3231_set_alarm_1(bus, alarm1);
+			i2c_ds3231_check_alarm_1(bus); //clear any existing alarm states
 
 			//wait and check
 			delayms(800);
-			alarm1_state[0] = i2c_ds3231_check_alarm_1(I2Cx);
+			alarm1_state[0] = i2c_ds3231_check_alarm_1(bus);
 			delayms(300);
-			alarm1_state[1] = i2c_ds3231_check_alarm_1(I2Cx);
+			alarm1_state[1] = i2c_ds3231_check_alarm_1(bus);
 			if(alarm1_state[0] != 0){
 				error_count++;
 			}if (alarm1_state[1] != 1){
@@ -745,16 +791,16 @@ uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx){
 			alarm1.AMx[0] = 0; alarm1.AMx[1] = 0;alarm1.AMx[2] = 1;alarm1.AMx[3] = 1;
 			alarm1.day_or_date = DS3231_ALARM_DATE;
 
-			result += i2c_ds3231_set_time_date(I2Cx, time1, date1);
+			result += i2c_ds3231_set_time_date(bus, time1, date1);
 
-			result += i2c_ds3231_set_alarm_1(I2Cx, alarm1);
-			i2c_ds3231_check_alarm_1(I2Cx); //clear any existing alarm states
+			result += i2c_ds3231_set_alarm_1(bus, alarm1);
+			i2c_ds3231_check_alarm_1(bus); //clear any existing alarm states
 
 			//wait and check
 			delayms(800);
-			alarm1_state[0] = i2c_ds3231_check_alarm_1(I2Cx);
+			alarm1_state[0] = i2c_ds3231_check_alarm_1(bus);
 			delayms(300);
-			alarm1_state[1] = i2c_ds3231_check_alarm_1(I2Cx);
+			alarm1_state[1] = i2c_ds3231_check_alarm_1(bus);
 			if(alarm1_state[0] != 0){
 				error_count++;
 			}if (alarm1_state[1] != 1){
@@ -793,16 +839,16 @@ uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx){
 			alarm1.AMx[0] = 0; alarm1.AMx[1] = 0;alarm1.AMx[2] = 0;alarm1.AMx[3] = 1;
 			alarm1.day_or_date = DS3231_ALARM_DATE;
 
-			result += i2c_ds3231_set_time_date(I2Cx, time1, date1);
+			result += i2c_ds3231_set_time_date(bus, time1, date1);
 
-			result += i2c_ds3231_set_alarm_1(I2Cx, alarm1);
-			i2c_ds3231_check_alarm_1(I2Cx); //clear any existing alarm states
+			result += i2c_ds3231_set_alarm_1(bus, alarm1);
+			i2c_ds3231_check_alarm_1(bus); //clear any existing alarm states
 
 			//wait and check
 			delayms(800);
-			alarm1_state[0] = i2c_ds3231_check_alarm_1(I2Cx);
+			alarm1_state[0] = i2c_ds3231_check_alarm_1(bus);
 			delayms(300);
-			alarm1_state[1] = i2c_ds3231_check_alarm_1(I2Cx);
+			alarm1_state[1] = i2c_ds3231_check_alarm_1(bus);
 			if(alarm1_state[0] != 0){
 				error_count++;
 			}if (alarm1_state[1] != 1){
@@ -841,16 +887,16 @@ uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx){
 			alarm1.AMx[0] = 0; alarm1.AMx[1] = 0;alarm1.AMx[2] = 0;alarm1.AMx[3] = 0;
 			alarm1.day_or_date = DS3231_ALARM_DATE;
 
-			result += i2c_ds3231_set_time_date(I2Cx, time1, date1);
+			result += i2c_ds3231_set_time_date(bus, time1, date1);
 
-			result += i2c_ds3231_set_alarm_1(I2Cx, alarm1);
-			i2c_ds3231_check_alarm_1(I2Cx); //clear any existing alarm states
+			result += i2c_ds3231_set_alarm_1(bus, alarm1);
+			i2c_ds3231_check_alarm_1(bus); //clear any existing alarm states
 
 			//wait and check
 			delayms(800);
-			alarm1_state[0] = i2c_ds3231_check_alarm_1(I2Cx);
+			alarm1_state[0] = i2c_ds3231_check_alarm_1(bus);
 			delayms(300);
-			alarm1_state[1] = i2c_ds3231_check_alarm_1(I2Cx);
+			alarm1_state[1] = i2c_ds3231_check_alarm_1(bus);
 			if(alarm1_state[0] != 0){
 				error_count++;
 			}if (alarm1_state[1] != 1){
@@ -889,16 +935,16 @@ uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx){
 			alarm1.AMx[0] = 0; alarm1.AMx[1] = 0;alarm1.AMx[2] = 0;alarm1.AMx[3] = 0;
 			alarm1.day_or_date = DS3231_ALARM_DAY;
 
-			result += i2c_ds3231_set_time_date(I2Cx, time1, date1);
+			result += i2c_ds3231_set_time_date(bus, time1, date1);
 
-			result += i2c_ds3231_set_alarm_1(I2Cx, alarm1);
-			i2c_ds3231_check_alarm_1(I2Cx); //clear any existing alarm states
+			result += i2c_ds3231_set_alarm_1(bus, alarm1);
+			i2c_ds3231_check_alarm_1(bus); //clear any existing alarm states
 
 			//wait and check
 			delayms(800);
-			alarm1_state[0] = i2c_ds3231_check_alarm_1(I2Cx);
+			alarm1_state[0] = i2c_ds3231_check_alarm_1(bus);
 			delayms(300);
-			alarm1_state[1] = i2c_ds3231_check_alarm_1(I2Cx);
+			alarm1_state[1] = i2c_ds3231_check_alarm_1(bus);
 			if(alarm1_state[0] != 0){
 				error_count++;
 			}if (alarm1_state[1] != 1){
@@ -937,17 +983,17 @@ uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx){
 			alarm2.AMx[1] = 1;alarm2.AMx[2] = 1;alarm2.AMx[3] = 1;
 			alarm2.day_or_date = DS3231_ALARM_DATE;
 
-			result += i2c_ds3231_set_time_date(I2Cx, time1, date1);
+			result += i2c_ds3231_set_time_date(bus, time1, date1);
 
-			result += i2c_ds3231_set_alarm_2(I2Cx, alarm2);
-			i2c_ds3231_check_alarm_2(I2Cx); //clear any existing alarm states
-			result += i2c_ds3231_read_alarm_2(I2Cx, &alarm2v);
+			result += i2c_ds3231_set_alarm_2(bus, alarm2);
+			i2c_ds3231_check_alarm_2(bus); //clear any existing alarm states
+			result += i2c_ds3231_read_alarm_2(bus, &alarm2v);
 
 			//wait and check
 			delayms(800);
-			alarm2_state[0] = i2c_ds3231_check_alarm_2(I2Cx);
+			alarm2_state[0] = i2c_ds3231_check_alarm_2(bus);
 			delayms(300);
-			alarm2_state[1] = i2c_ds3231_check_alarm_2(I2Cx);
+			alarm2_state[1] = i2c_ds3231_check_alarm_2(bus);
 			if(alarm2_state[0] != 0){
 				error_count++;
 			}if (alarm2_state[1] != 1){
@@ -1007,16 +1053,16 @@ uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx){
 			alarm2.AMx[1] = 0;alarm2.AMx[2] = 1;alarm2.AMx[3] = 1;
 			alarm2.day_or_date = DS3231_ALARM_DATE;
 
-			result += i2c_ds3231_set_time_date(I2Cx, time1, date1);
+			result += i2c_ds3231_set_time_date(bus, time1, date1);
 
-			result += i2c_ds3231_set_alarm_2(I2Cx, alarm2);
-			i2c_ds3231_check_alarm_2(I2Cx); //clear any existing alarm states
+			result += i2c_ds3231_set_alarm_2(bus, alarm2);
+			i2c_ds3231_check_alarm_2(bus); //clear any existing alarm states
 
 			//wait and check
 			delayms(800);
-			alarm2_state[0] = i2c_ds3231_check_alarm_2(I2Cx);
+			alarm2_state[0] = i2c_ds3231_check_alarm_2(bus);
 			delayms(300);
-			alarm2_state[1] = i2c_ds3231_check_alarm_2(I2Cx);
+			alarm2_state[1] = i2c_ds3231_check_alarm_2(bus);
 			if(alarm2_state[0] != 0){
 				error_count++;
 			}if (alarm2_state[1] != 1){
@@ -1054,16 +1100,16 @@ uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx){
 			alarm2.AMx[1] = 0;alarm2.AMx[2] = 0;alarm2.AMx[3] = 1;
 			alarm2.day_or_date = DS3231_ALARM_DATE;
 
-			result += i2c_ds3231_set_time_date(I2Cx, time1, date1);
+			result += i2c_ds3231_set_time_date(bus, time1, date1);
 
-			result += i2c_ds3231_set_alarm_2(I2Cx, alarm2);
-			i2c_ds3231_check_alarm_2(I2Cx); //clear any existing alarm states
+			result += i2c_ds3231_set_alarm_2(bus, alarm2);
+			i2c_ds3231_check_alarm_2(bus); //clear any existing alarm states
 
 			//wait and check
 			delayms(800);
-			alarm2_state[0] = i2c_ds3231_check_alarm_2(I2Cx);
+			alarm2_state[0] = i2c_ds3231_check_alarm_2(bus);
 			delayms(300);
-			alarm2_state[1] = i2c_ds3231_check_alarm_2(I2Cx);
+			alarm2_state[1] = i2c_ds3231_check_alarm_2(bus);
 			if(alarm2_state[0] != 0){
 				error_count++;
 			}if (alarm2_state[1] != 1){
@@ -1101,16 +1147,16 @@ uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx){
 			alarm2.AMx[1] = 0;alarm2.AMx[2] = 0;alarm2.AMx[3] = 0;
 			alarm2.day_or_date = DS3231_ALARM_DATE;
 
-			result += i2c_ds3231_set_time_date(I2Cx, time1, date1);
+			result += i2c_ds3231_set_time_date(bus, time1, date1);
 
-			result += i2c_ds3231_set_alarm_2(I2Cx, alarm2);
-			i2c_ds3231_check_alarm_2(I2Cx); //clear any existing alarm states
+			result += i2c_ds3231_set_alarm_2(bus, alarm2);
+			i2c_ds3231_check_alarm_2(bus); //clear any existing alarm states
 
 			//wait and check
 			delayms(800);
-			alarm2_state[0] = i2c_ds3231_check_alarm_2(I2Cx);
+			alarm2_state[0] = i2c_ds3231_check_alarm_2(bus);
 			delayms(300);
-			alarm2_state[1] = i2c_ds3231_check_alarm_2(I2Cx);
+			alarm2_state[1] = i2c_ds3231_check_alarm_2(bus);
 			if(alarm2_state[0] != 0){
 				error_count++;
 			}if (alarm2_state[1] != 1){
@@ -1148,16 +1194,16 @@ uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx){
 			alarm2.AMx[1] = 0;alarm2.AMx[2] = 0;alarm2.AMx[3] = 0;
 			alarm2.day_or_date = DS3231_ALARM_DAY;
 
-			result += i2c_ds3231_set_time_date(I2Cx, time1, date1);
+			result += i2c_ds3231_set_time_date(bus, time1, date1);
 
-			result += i2c_ds3231_set_alarm_2(I2Cx, alarm2);
-			i2c_ds3231_check_alarm_2(I2Cx); //clear any existing alarm states
+			result += i2c_ds3231_set_alarm_2(bus, alarm2);
+			i2c_ds3231_check_alarm_2(bus); //clear any existing alarm states
 
 			//wait and check
 			delayms(800);
-			alarm2_state[0] = i2c_ds3231_check_alarm_2(I2Cx);
+			alarm2_state[0] = i2c_ds3231_check_alarm_2(bus);
 			delayms(300);
-			alarm2_state[1] = i2c_ds3231_check_alarm_2(I2Cx);
+			alarm2_state[1] = i2c_ds3231_check_alarm_2(bus);
 			if(alarm2_state[0] != 0){
 				error_count++;
 			}if (alarm2_state[1] != 1){
@@ -1179,10 +1225,10 @@ uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx){
 /**********************************************************************************************/
 /* Private functions                                                                          */
 /**********************************************************************************************/
-uint8_t _i2c_start_address(I2C_TypeDef* I2Cx, uint8_t address, uint8_t I2C_Direction){
+uint8_t _i2c_start_address(i2c_bus_t bus, uint8_t address, uint8_t I2C_Direction){
 	uint16_t timeout = 0;
-	I2C_GenerateSTART(I2Cx, ENABLE);
-	while(!I2C_GetFlagStatus(I2Cx, I2C_FLAG_SB)){
+	I2C_GenerateSTART(i2c_port[bus].i2c_port, ENABLE);
+	while(!I2C_GetFlagStatus(i2c_port[bus].i2c_port, I2C_FLAG_SB)){
 		timeout++;
 		if (timeout > DS3231_TIMEOUT){
 			return 1;
@@ -1190,12 +1236,12 @@ uint8_t _i2c_start_address(I2C_TypeDef* I2Cx, uint8_t address, uint8_t I2C_Direc
 	}
 	timeout = 0;
 
-	I2C_AcknowledgeConfig(I2Cx, ENABLE);
+	I2C_AcknowledgeConfig(i2c_port[bus].i2c_port, ENABLE);
 
 	if (I2C_Direction == I2C_Direction_Transmitter){
-		I2C_Send7bitAddress(I2Cx, address<<1, I2C_Direction_Transmitter);
+		I2C_Send7bitAddress(i2c_port[bus].i2c_port, address<<1, I2C_Direction_Transmitter);
 
-		while(!(I2C_GetFlagStatus(I2Cx, I2C_FLAG_ADDR))){
+		while(!(I2C_GetFlagStatus(i2c_port[bus].i2c_port, I2C_FLAG_ADDR))){
 			timeout++;
 			if (timeout > DS3231_TIMEOUT){
 				return 1;
@@ -1203,9 +1249,9 @@ uint8_t _i2c_start_address(I2C_TypeDef* I2Cx, uint8_t address, uint8_t I2C_Direc
 		}
 
 	}else{
-		I2C_Send7bitAddress(I2Cx, address<<1, I2C_Direction_Receiver);
+		I2C_Send7bitAddress(i2c_port[bus].i2c_port, address<<1, I2C_Direction_Receiver);
 
-		while (!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)){
+		while (!I2C_CheckEvent(i2c_port[bus].i2c_port, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED)){
 			timeout++;
 			if (timeout > DS3231_TIMEOUT){
 				return 1;
@@ -1213,51 +1259,51 @@ uint8_t _i2c_start_address(I2C_TypeDef* I2Cx, uint8_t address, uint8_t I2C_Direc
 		}
 	}
 
-	I2C_ReadRegister(I2Cx, I2C_Register_SR2);
+	I2C_ReadRegister(i2c_port[bus].i2c_port, I2C_Register_SR2);
 
 	return 0;
 }
 
-uint8_t _i2c_stop(I2C_TypeDef* I2Cx){
+uint8_t _i2c_stop(i2c_bus_t bus){
 	uint16_t timeout = 0;
-	while(!I2C_GetFlagStatus(I2Cx, I2C_FLAG_TXE | I2C_FLAG_BTF)){
+	while(!I2C_GetFlagStatus(i2c_port[bus].i2c_port, I2C_FLAG_TXE | I2C_FLAG_BTF)){
 		timeout++;
 		if (timeout > DS3231_TIMEOUT){
 			return 1;
 		}
 	}
-	I2C_GenerateSTOP(I2Cx, ENABLE);
+	I2C_GenerateSTOP(i2c_port[bus].i2c_port, ENABLE);
 	return 0;
 }
 
-uint8_t _i2c_write(I2C_TypeDef* I2Cx, uint8_t byte){
+uint8_t _i2c_write(i2c_bus_t bus, uint8_t byte){
 	uint16_t timeout = 0;
-	while (!I2C_GetFlagStatus(I2Cx,I2C_FLAG_TXE)){
+	while (!I2C_GetFlagStatus(i2c_port[bus].i2c_port,I2C_FLAG_TXE)){
 		timeout++;
 		if (timeout > DS3231_TIMEOUT){
 			return 1;
 		}
 	}
-	I2C_SendData(I2Cx, byte);
+	I2C_SendData(i2c_port[bus].i2c_port, byte);
 	return 0;
 }
 
-uint8_t _i2c_read(I2C_TypeDef* I2Cx, uint8_t ack, uint8_t * byte){
+uint8_t _i2c_read(i2c_bus_t bus, uint8_t ack, uint8_t * byte){
 	uint16_t timeout = 0;
 	if (ack == ACK){
-		I2Cx->CR1 |= I2C_CR1_ACK;
+		i2c_port[bus].i2c_port->CR1 |= I2C_CR1_ACK;
 	}else{
-		I2Cx->CR1 &= (uint16_t)~((uint16_t)I2C_CR1_ACK);
+		i2c_port[bus].i2c_port->CR1 &= (uint16_t)~((uint16_t)I2C_CR1_ACK);
 	}
 
-	while (!I2C_CheckEvent(I2Cx, I2C_EVENT_MASTER_BYTE_RECEIVED)){
+	while (!I2C_CheckEvent(i2c_port[bus].i2c_port, I2C_EVENT_MASTER_BYTE_RECEIVED)){
 		timeout++;
 		if (timeout > DS3231_TIMEOUT){
 			return 1;
 		}
 	}
 
-	*byte = I2C_ReceiveData(I2Cx);
+	*byte = I2C_ReceiveData(i2c_port[bus].i2c_port);
 	return 0;
 }
 

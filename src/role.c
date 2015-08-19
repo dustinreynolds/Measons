@@ -101,7 +101,7 @@ void role_check(config_t * config){
 				}
 
 				//Now execute this received packet
-				role_mcc_execute_packet(&packet);
+				role_mcc_execute_packet(config, &packet);
 
 				wait_timeout = 0;
 			}
@@ -123,8 +123,8 @@ void role_check(config_t * config){
 		if (wait_timeout == 0){
 			//send temperature
 			init_3v3RegOn(true);
-			delayms(1000);
-			for (i = 0; i < config->number_onewire_devices; i++){
+			delayms(200);
+			for (i = 0; i < config->nOW; i++){
 				uint8_t presence;
 				uint8_t rom[8];
 				uint16_t temperature = 0x0000;
@@ -203,7 +203,7 @@ void role_check(config_t * config){
 			}
 			init_3v3RegOn(false);
 			wait_timeout++;
-		}else if(wait_timeout < 1000){
+		}else if(wait_timeout < 10000){
 			//do nothing
 			wait_timeout++;
 		}else {
@@ -214,13 +214,36 @@ void role_check(config_t * config){
 	}
 }
 
-void role_mcc_execute_packet(packet_sx1231h_t * packet){
+void role_mcc_execute_packet(config_t * config, packet_sx1231h_t * packet){
 	//do something with the packet
 	if (packet->id == PACKET_SX1231H_ID_SENSOR){
-		printSerial(USART2,"RX from id %02x, Type %02x:%02x,", packet->sender_id, packet->id, packet->sub_id);
+
 		if (packet->id == PACKET_SX1231H_ID_00_SUB_ID_TEMPERATURE){
+			DS3231_time_t time;
+			DS3231_date_t date;
+			float temp;
+			if (config->rtc.i2c_rtc_enabled == 1){
+				init_3v3RegOn(true);
+				delayms(10);
+				i2c_ds3231_read_time_date(config->i2c[config->rtc.i2c_rtc_number].bus>>1, &time, &date);
+				init_3v3RegOn(false);
+			}else{
+				date.year = 0;
+				date.month = 0;
+				date.date = 0;
+				date.day = 0;
+				time.is_ampm_time = 0;
+				time.am_pm = 0;
+				time.hours = 0;
+				time.minutes = 0;
+				time.seconds = 0;
+			}
+			printSerial(USART2, "sender_id.packet_id.sub_id.TempID0.TempID1.TempID2.TempID3.TempID4.TempID5.TempID6.TempID7.Temp.YY.MM.DD.HH.MM.SS,");
+
+			printSerial(USART2,"%02x,%02x,%02x,", packet->sender_id, packet->id, packet->sub_id);
 			//display wireless temperature reading
-			printSerial(USART2,"ID %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x, Temperature %04d\r\n",
+			temp = (uint16_t)((uint16_t)packet->payload[8] << 8) | packet->payload[9];
+			printSerial(USART2,"%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x,%03.3f,",
 					packet->payload[0],
 					packet->payload[1],
 					packet->payload[2],
@@ -229,7 +252,11 @@ void role_mcc_execute_packet(packet_sx1231h_t * packet){
 					packet->payload[5],
 					packet->payload[6],
 					packet->payload[7],
-					(uint16_t)((uint16_t)packet->payload[8] << 8) + packet->payload[9]);
+					(uint16_t)((uint16_t)packet->payload[8] << 8) | packet->payload[9],
+					(((float)temp/16.0)*9.0/5.0 + 32.0));
+			printSerial(USART2, "%02d,%02d,%02d,%02d,%02d,%02d\r\n",
+					date.year, date.month, date.date, time.hours, time.minutes, time.seconds);
+
 		}
 	}
 }

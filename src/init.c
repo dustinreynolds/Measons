@@ -62,24 +62,35 @@ void init_setup_configuration(config_t config) {
 
 		GPIOA->BSRRH |= GPIO_Pin_8;
 	}
-	if (config.number_onewire_devices > 0) {
+	if (config.nOW > 0) {
 		uint8_t i = 0;
-		for (i = 0; i < config.number_onewire_devices; i++) {
+		for (i = 0; i < config.nOW; i++) {
 			if (config.onewire[i].bus > 0) {
 				onewire_Init((config.onewire[i].bus - 1));
+			}
+		}
+	}
+
+	if (config.nI2C > 0){
+		// Do something for each I2C device
+		uint8_t i = 0;
+		for (i = 0; i < config.nI2C; i++){
+
+			if (config.i2c[i].bus > 0){
+				i2c_init(config.i2c[i].bus >> 1);
 			}
 		}
 	}
 }
 
 void init_search_new_hardware(config_t * config) {
-	if (config->number_onewire_devices > 0) {
+	if (config->nOW > 0) {
 		uint8_t i = 0;
 		uint8_t j, k;
 
 		init_3v3RegOn(true);
 		delayms(1000);
-		for (i = 0; i < config->number_onewire_devices; i++) {
+		for (i = 0; i < config->nOW; i++) {
 			uint8_t rom[8];
 			int result;
 			uint8_t buffer[100];
@@ -98,7 +109,7 @@ void init_search_new_hardware(config_t * config) {
 				//uart_OutString(USART2, buffer);
 
 				//Compare this rom id vs id's stored
-				for (k = 0; k < config->number_onewire_devices; k++){
+				for (k = 0; k < config->nOW; k++){
 					if (config->onewire[k].bus == config->onewire[i].bus ){
 						//on same bus
 						if (    (config->onewire[k].unique_id[0] == rom[0]) &&
@@ -128,19 +139,37 @@ void init_search_new_hardware(config_t * config) {
 						}
 					}
 				}
-				if (k == config->number_onewire_devices){
+				if (k == config->nOW){
 					//new device discovered!
-					config->onewire[config->number_onewire_devices].bus = config->onewire[i].bus;
-					config->onewire[config->number_onewire_devices].enabled = 1;
-					config->onewire[config->number_onewire_devices].type = 0x00;
+					config->onewire[config->nOW].bus = config->onewire[i].bus;
+					config->onewire[config->nOW].enabled = 1;
+					config->onewire[config->nOW].type = 0x00;
 					for (k = 0; k < 8; k++){
-						config->onewire[config->number_onewire_devices].unique_id[k] = rom[k];
+						config->onewire[config->nOW].unique_id[k] = rom[k];
 					}
-					config->number_onewire_devices++;  //now there is one more device on this bus
+					config->nOW++;  //now there is one more device on this bus
 				}
 
 				result = OWNext((config->onewire[i].bus-1));
 				j++;
+			}
+		}
+		/* This i2c loop doesn't quite search for new i2c devices... */
+		for (i = 0; i < config->nI2C; i++) {
+			if (config->i2c[i].bus > 0){
+				i2c_init(config->i2c[i].bus >> 1);
+
+				if (config->i2c[i].type == I2C_TYPE_RTC_DS3231){
+					uint8_t result;
+					i2c_ds3231_reset(config->i2c[i].bus >> 1);
+					result = i2c_ds3231_init(config->i2c[i].bus >> 1);
+
+					if (result == 0){
+						config->i2c[i].enabled = 1;
+						config->rtc.i2c_rtc_enabled = 1;
+						config->rtc.i2c_rtc_number = i;
+					}
+				}
 			}
 		}
 

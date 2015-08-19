@@ -76,5 +76,17 @@
             <description></description>
             <sequence value="h[CA] h[00] h[05] h[05] h[00] h[01] h[01] h[0A] h[20] h[58] h[F5]" />
         </SequenceItem>
+        <SequenceItem name="00,07 Check RTC">
+            <description></description>
+            <sequence value="h[CA] h[00] h[07] h[00] h[39] h[A7]" />
+        </SequenceItem>
+        <SequenceItem name="stuff 00,14 - i2c RTC">
+            <description></description>
+            <sequence value="h[CA] h[00] h[05] h[05] h[00] h[14] h[01] h[00] h[68] h[D9] h[10]" />
+        </SequenceItem>
+        <SequenceItem name="Set time">
+            <description></description>
+            <sequence value="h[CA] h[00] h[08] h[09] h[0F] h[08] h[13] h[03] h[00] h[00] h[10] h[29] h[00] h[66] h[15]" />
+        </SequenceItem>
     </ItemList>
 </HtermSequenceFile>

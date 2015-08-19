@@ -37,6 +37,17 @@
 #ifndef I2C_H_
 #define I2C_H_
 
+#define I2C_MAX_SENSORS			10
+
+typedef enum {
+	I2C_BUS_1 = 0x00,
+	I2C_BUS_2 = 0x01
+} i2c_bus_t;
+
+typedef enum {
+	I2C_TYPE_RTC_DS3231 = 0x00,
+};
+
 #define ACK	1
 #define NACK 2
 
@@ -81,6 +92,18 @@
 #define DS3231_LSB_TEMP_REG 		0x12
 
 typedef struct {
+	GPIO_TypeDef* gpio_port;
+	I2C_TypeDef* i2c_port;
+	uint32_t pin_sda;
+	uint32_t pin_scl;
+	GPIO_InitTypeDef gpio;
+	I2C_InitTypeDef i2c;
+	uint8_t pin_sda_source;
+	uint8_t pin_scl_source;
+	uint8_t i2c_af;
+} i2c_port_t;
+
+typedef struct {
 	uint8_t seconds;
 	uint8_t minutes;
 	uint8_t hours;
@@ -103,26 +126,24 @@ typedef struct {
 	uint8_t is_ampm_time;
 	uint8_t day;
 	uint8_t date;
-	uint8_t AMx[4];
+	uint8_t AMx[4];i2c_bus_t bus;
 	uint8_t day_or_date;  //AMx all 0 for this option to be considered
 }DS3231_alarm_t;
 
-
-
-void i2c_init(void);
-uint8_t i2c_ds3231_init(I2C_TypeDef* I2Cx);
-uint8_t i2c_ds3231_write_reg(I2C_TypeDef* I2Cx, uint8_t address, uint8_t value);
-uint8_t i2c_ds3231_read_register(I2C_TypeDef* I2Cx, uint8_t address, uint8_t * value);
-uint8_t i2c_ds3231_read_registers(I2C_TypeDef* I2Cx, uint8_t address, uint8_t * data, uint8_t count);
-uint8_t i2c_ds3231_set_time_date(I2C_TypeDef* I2Cx, DS3231_time_t time, DS3231_date_t date);
-uint8_t i2c_ds3231_read_time_date(I2C_TypeDef* I2Cx, DS3231_time_t * time, DS3231_date_t * date);
-uint8_t i2c_ds3231_read_temperature(I2C_TypeDef* I2Cx, float * temperature);
-uint8_t i2c_ds3231_set_alarm_1(I2C_TypeDef* I2Cx, DS3231_alarm_t alarm);
-uint8_t i2c_ds3231_read_alarm_1(I2C_TypeDef* I2Cx, DS3231_alarm_t * alarm);
-uint8_t i2c_ds3231_set_alarm_2(I2C_TypeDef* I2Cx, DS3231_alarm_t alarm);
-uint8_t i2c_ds3231_read_alarm_2(I2C_TypeDef* I2Cx, DS3231_alarm_t * alarm);
-uint8_t i2c_ds3231_check_alarm_1(I2C_TypeDef* I2Cx);
-uint8_t i2c_ds3231_check_alarm_2(I2C_TypeDef* I2Cx);
-uint8_t i2c_ds3231_test_rtc(I2C_TypeDef* I2Cx);
+void i2c_init(i2c_bus_t bus);
+uint8_t i2c_ds3231_init(i2c_bus_t bus);
+uint8_t i2c_ds3231_write_reg(i2c_bus_t bus, uint8_t address, uint8_t value);
+uint8_t i2c_ds3231_read_register(i2c_bus_t bus, uint8_t address, uint8_t * value);
+uint8_t i2c_ds3231_read_registers(i2c_bus_t bus, uint8_t address, uint8_t * data, uint8_t count);
+uint8_t i2c_ds3231_set_time_date(i2c_bus_t bus, DS3231_time_t time, DS3231_date_t date);
+uint8_t i2c_ds3231_read_time_date(i2c_bus_t bus, DS3231_time_t * time, DS3231_date_t * date);
+uint8_t i2c_ds3231_read_temperature(i2c_bus_t bus, float * temperature);
+uint8_t i2c_ds3231_set_alarm_1(i2c_bus_t bus, DS3231_alarm_t alarm);
+uint8_t i2c_ds3231_read_alarm_1(i2c_bus_t bus, DS3231_alarm_t * alarm);
+uint8_t i2c_ds3231_set_alarm_2(i2c_bus_t bus, DS3231_alarm_t alarm);
+uint8_t i2c_ds3231_read_alarm_2(i2c_bus_t bus, DS3231_alarm_t * alarm);
+uint8_t i2c_ds3231_check_alarm_1(i2c_bus_t bus);
+uint8_t i2c_ds3231_check_alarm_2(i2c_bus_t bus);
+uint8_t i2c_ds3231_test_rtc(i2c_bus_t bus);
 
 #endif /* I2C_H_ */
