@@ -84,28 +84,52 @@ void init_setup_configuration(config_t config) {
 }
 
 void init_search_new_hardware(config_t * config) {
+	uint8_t i = 0;
 	if (config->nOW > 0) {
-		uint8_t i = 0;
 		uint8_t j, k;
+		uint8_t bus_list[OW_MAX_SENSORS];
+		uint8_t bus_ctr = 0;
 
+		memset(bus_list, 0xff, sizeof(bus_list));
+
+		//Disable all onewire sensors
+		for (i = 0; i < config->nOW; i++){
+			config->onewire[i].enabled = 0;
+		}
 		init_3v3RegOn(true);
 		delayms(1000);
 		for (i = 0; i < config->nOW; i++) {
 			uint8_t rom[8];
+			uint8_t ow_continue = 0;
 			int result;
 			uint8_t buffer[100];
 			if (config->onewire[i].bus == 0) {
 				continue;
 			}
 
+			for (k=0; k < OW_MAX_SENSORS; k++){
+				//look to see if we have scanned this bus before
+				if (bus_list[k] == 0xFF){
+					break;
+				}
+				if (bus_list[k] == config->onewire[i].bus){
+					ow_continue = 1;
+					break;
+				}
+			}
+			if (ow_continue == 1){ //we have
+				continue;
+			}
+			bus_list[bus_ctr++] = config->onewire[i].bus;
+
 			result = OWFirst((config->onewire[i].bus-1));
 			j = 0;
 			while (result) {
 				onewire_read_latest_ROM(&rom);
-				sprintf(buffer, "%d ROM ID = %d,%d,%d,%d,%d,%d,%d,%d\r\n", j,
-						rom[0], rom[1], rom[2],
-						rom[3], rom[4], rom[5],
-						rom[6], rom[7]);
+				//sprintf(buffer, "%d ROM ID = %d,%d,%d,%d,%d,%d,%d,%d\r\n", j,
+				//		rom[0], rom[1], rom[2],
+				//		rom[3], rom[4], rom[5],
+				//		rom[6], rom[7]);
 				//uart_OutString(USART2, buffer);
 
 				//Compare this rom id vs id's stored
@@ -121,6 +145,7 @@ void init_search_new_hardware(config_t * config) {
 								(config->onewire[k].unique_id[6] == rom[6]) &&
 								(config->onewire[k].unique_id[7] == rom[7]) ){
 							//exact match on this bus, we knew about this device before.
+							config->onewire[k].enabled = 1;
 							break; //break out of the for loop, scan for different ROM id
 						}
 					}else{
@@ -135,6 +160,7 @@ void init_search_new_hardware(config_t * config) {
 								(config->onewire[k].unique_id[7] == rom[7]) ){
 							//exact match on this id, we knew about this device before on a different bus
 							config->onewire[k].bus = config->onewire[i].bus;
+							config->onewire[k].enabled = 1;
 							break; //break out of the for loop, scan for different ROM id
 						}
 					}
@@ -154,27 +180,30 @@ void init_search_new_hardware(config_t * config) {
 				j++;
 			}
 		}
-		/* This i2c loop doesn't quite search for new i2c devices... */
-		for (i = 0; i < config->nI2C; i++) {
-			if (config->i2c[i].bus > 0){
-				i2c_init(config->i2c[i].bus >> 1);
+	}
+	/* This i2c loop doesn't quite search for new i2c devices... */
+	for (i = 0; i < config->nI2C; i++) {
+		init_3v3RegOn(true);
+		delayms(1000);
+		if (config->i2c[i].bus > 0){
+			i2c_init(config->i2c[i].bus >> 1);
 
-				if (config->i2c[i].type == I2C_TYPE_RTC_DS3231){
-					uint8_t result;
-					i2c_ds3231_reset(config->i2c[i].bus >> 1);
-					result = i2c_ds3231_init(config->i2c[i].bus >> 1);
+			if (config->i2c[i].type == I2C_TYPE_RTC_DS3231){
+				uint8_t result;
+				i2c_ds3231_reset(config->i2c[i].bus >> 1);
+				result = i2c_ds3231_init(config->i2c[i].bus >> 1);
 
-					if (result == 0){
-						config->i2c[i].enabled = 1;
-						config->rtc.i2c_rtc_enabled = 1;
-						config->rtc.i2c_rtc_number = i;
-					}
+				if (result == 0){
+					config->i2c[i].enabled = 1;
+					config->rtc.i2c_rtc_enabled = 1;
+					config->rtc.i2c_rtc_number = i;
 				}
 			}
 		}
-
-		init_3v3RegOn(false);
 	}
+
+	init_3v3RegOn(false);
+
 }
 
 void init_flash(void){

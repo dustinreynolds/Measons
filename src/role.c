@@ -35,6 +35,8 @@
 
 #include "spi.h"
 #include "uart.h"
+#include "timer.h"
+#include "init.h"
 #include "sx1231h.h"
 #include "packet_sx1231h.h"
 #include "packet_eeprom.h"
@@ -57,7 +59,7 @@ error_role_t role_init(config_t config){
 		sx1231h_receiveFrameStart(SPI_RFM69_1);
 	}else if (config.role.role == ROLE_GENERIC){
 		//setup RF for transmit
-
+		sx1231h_set_power(SPI_RFM69_1,17);
 	}else {
 		//setup RF for transmit
 	}
@@ -112,8 +114,9 @@ void role_check(config_t * config){
 			wait_timeout = 0;
 		}
 
-	}else if (config->role.role == ROLE_GENERIC){
-		static uint16_t wait_timeout;
+	}
+	else if (config->role.role == ROLE_GENERIC){
+		static uint32_t wait_timeout;
 		onewire_error_t ow_result;
 		uint8_t result;
 		uint8_t i = 0, j;
@@ -124,44 +127,46 @@ void role_check(config_t * config){
 			//send temperature
 			init_3v3RegOn(true);
 			delayms(200);
+
 			for (i = 0; i < config->nOW; i++){
 				uint8_t presence;
 				uint8_t rom[8];
 				uint16_t temperature = 0x0000;
 
-				//search for all active sensors (only check the temperature of present ones
-				presence = onewire_sendResetBasic((config->onewire[i].bus - 1));
-
-				if (presence == 0){
-					//no body home
-					config->onewire[i].enabled = 0;
-					continue;
-				}
-
-				result = OWFirst((config->onewire[i].bus-1));
-
-				config->onewire[i].enabled = 0;
-
-				while (result){
-					onewire_read_latest_ROM(&rom);
-
-					if (    (config->onewire[i].unique_id[0] == rom[0]) &&
-							(config->onewire[i].unique_id[1] == rom[1]) &&
-							(config->onewire[i].unique_id[2] == rom[2]) &&
-							(config->onewire[i].unique_id[3] == rom[3]) &&
-							(config->onewire[i].unique_id[4] == rom[4]) &&
-							(config->onewire[i].unique_id[5] == rom[5]) &&
-							(config->onewire[i].unique_id[6] == rom[6]) &&
-							(config->onewire[i].unique_id[7] == rom[7]) ){
-						//exact match on this bus, we knew about this device before.
-						config->onewire[i].enabled = 1; //break out of the for loop, scan for different ROM id
-					}
-					result = OWNext((config->onewire[i].bus-1));
-				}
-
+//				//search for all active sensors (only check the temperature of present ones
+//				presence = onewire_sendResetBasic((config->onewire[i].bus - 1));
+//
+//				if (presence == 0){
+//					//no body home
+//					config->onewire[i].enabled = 0;
+//					continue;
+//				}
+//
+//				result = OWFirst((config->onewire[i].bus-1));
+//
+//				config->onewire[i].enabled = 0;
+//
+//				while (result){
+//					onewire_read_latest_ROM(&rom);
+//
+//					if (    (config->onewire[i].unique_id[0] == rom[0]) &&
+//							(config->onewire[i].unique_id[1] == rom[1]) &&
+//							(config->onewire[i].unique_id[2] == rom[2]) &&
+//							(config->onewire[i].unique_id[3] == rom[3]) &&
+//							(config->onewire[i].unique_id[4] == rom[4]) &&
+//							(config->onewire[i].unique_id[5] == rom[5]) &&
+//							(config->onewire[i].unique_id[6] == rom[6]) &&
+//							(config->onewire[i].unique_id[7] == rom[7]) ){
+//						//exact match on this bus, we knew about this device before.
+//						config->onewire[i].enabled = 1; //break out of the for loop, scan for different ROM id
+//					}
+//					result = OWNext((config->onewire[i].bus-1));
+//				}
+//
 				if (config->onewire[i].enabled == 0){
 					continue;
 				}
+
 				//check temperature
 				//onewire_trigger_temp(config->onewire[i].bus - 1);
 
@@ -199,14 +204,25 @@ void role_check(config_t * config){
 					}
 				}else{
 					printSerial(USART2, "OneWire error %02d", ow_result);
+					config->onewire[i].enabled = 0;
 				}
 			}
 			init_3v3RegOn(false);
 			wait_timeout++;
-		}else if(wait_timeout < 10000){
+		}else if(wait_timeout < 1200000){ //change this to a RTC or timer based mechanism
 			//do nothing
 			wait_timeout++;
 		}else {
+			uint32_t Address;
+			//packet_eeprom_init_config(config); //note that this wipes out the configuration
+			//packet_eeprom_load_configuration(config);
+
+			//init_setup_configuration(*config);
+
+			init_search_new_hardware(config);
+
+			//Address = 0x08080000;
+			//packet_eeprom_save_configuration(&Address, *config);
 
 			wait_timeout = 0;
 		}
@@ -252,7 +268,6 @@ void role_mcc_execute_packet(config_t * config, packet_sx1231h_t * packet){
 					packet->payload[5],
 					packet->payload[6],
 					packet->payload[7],
-					(uint16_t)((uint16_t)packet->payload[8] << 8) | packet->payload[9],
 					(((float)temp/16.0)*9.0/5.0 + 32.0));
 			printSerial(USART2, "%02d,%02d,%02d,%02d,%02d,%02d\r\n",
 					date.year, date.month, date.date, time.hours, time.minutes, time.seconds);

@@ -116,7 +116,7 @@ void packet_00_config(parser_t pkt, config_t * config){
 		uint8_t i;
 		if (config->nOW < OW_MAX_SENSORS){
 			config->onewire[config->nOW].bus = pkt.packet.payload[0];
-			config->onewire[config->nOW].enabled = pkt.packet.payload[1];
+			config->onewire[config->nOW].enabled = 0;
 			config->onewire[config->nOW].type = pkt.packet.payload[2];
 			for (i = 0; i < 8; i++){
 				config->onewire[config->nOW].unique_id[i] = pkt.packet.payload[3+i];
@@ -199,6 +199,9 @@ eeprom_00_error_t packet_00_save_config_to_eeprom(uint32_t * Address, config_t c
 	}
 	//handle configuration which is spread over multiple packets
 	for (j = 0; j < config.nOW; j++){
+		if (config.onewire[j].enabled == 0){
+			continue;// don't save sensors that are no longer present
+		}
 		error = packet_00_make_packet(PKT_00_ONEWIRE,j,&packet,config);
 		if (error != ERROR_00_NO_ERROR){
 			return error;

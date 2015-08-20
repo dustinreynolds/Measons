@@ -42,6 +42,7 @@ void __inline__ init_TIM2_Change_Period(uint16_t period);
 void delayms(uint32_t msec);
 void delayus(uint16_t usec);
 void startDelayus(uint16_t usec);
+uint32_t checkDelayus(void);
 void waitSpecificCount(uint16_t usec);
 void waitStartedDelay(void);
 

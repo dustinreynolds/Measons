@@ -106,6 +106,10 @@ void startDelayus(uint16_t usec){
 	init_TIM2_Change_Period(usec);
 }
 
+uint32_t checkDelayus(void){
+	return TIM_GetCounter(TIM2);
+}
+
 void waitSpecificCount(uint16_t usec){
 	while(TIM_GetCounter(TIM2) < usec){};
 }
